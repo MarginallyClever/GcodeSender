@@ -33,7 +33,9 @@ implements SerialPortEventListener, ActionListener {
 	
 	private String[] portsDetected;
 	
-	public static int BAUD_RATE = 57600;
+	public static String BAUD_RATE = "57600";
+	private static String [] baudsAllowed = { "300","1200","2400","4800","9600","14400","19200","28800","38400","57600","115200","125000","250000"};
+	
 	public CommPortIdentifier portIdentifier;
 	public CommPort commPort;
 	public SerialPort serialPort;
@@ -51,6 +53,7 @@ implements SerialPortEventListener, ActionListener {
 	JTextArea log = new JTextArea();
 	JScrollPane logPane;
     private JMenuItem [] buttonPorts;
+    private JMenuItem [] buttonBauds;
     
     // communications
     String line3;
@@ -79,6 +82,14 @@ implements SerialPortEventListener, ActionListener {
 	
 	private void SetLastPort(String portName) {
 		prefs.put("last port", portName);
+	}
+	
+	private String GetLastBaud() {
+		return prefs.get("last baud",BAUD_RATE);
+	}
+	
+	private void SetLastBaud(String baud) {
+		prefs.put("last port", baud);		
 	}
 	
 	public void Log(String msg) {
@@ -275,7 +286,7 @@ implements SerialPortEventListener, ActionListener {
 		// set the port parameters (like baud rate)
 		serialPort = (SerialPort)commPort;
 		try {
-			serialPort.setSerialPortParams(BAUD_RATE,SerialPort.DATABITS_8,SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
+			serialPort.setSerialPortParams(Integer.parseInt(GetLastBaud()),SerialPort.DATABITS_8,SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
 		}
 		catch(Exception e) {
 			Log("Port could not be configured:"+e.getMessage()+NL);
@@ -317,6 +328,13 @@ implements SerialPortEventListener, ActionListener {
 				return;
 			}
 		}
+		
+		for(i=0;i<baudsAllowed.length;++i) {
+			if(subject == buttonBauds[i]) {
+				SetLastBaud(baudsAllowed[i]);
+				return;
+			}
+		}
 	}
 
     // Adds a listener that should be notified.
@@ -331,7 +349,26 @@ implements SerialPortEventListener, ActionListener {
       }
     }
 
-	public JMenu getMenu() {
+	public JMenu getBaudMenu() {
+		JMenu subMenu = new JMenu();
+	    ButtonGroup group = new ButtonGroup();
+	    buttonBauds = new JRadioButtonMenuItem[baudsAllowed.length];
+	    
+	    String lastBaud=GetLastBaud();
+	    
+		int i;
+	    for(i=0;i<baudsAllowed.length;++i) {
+	    	buttonBauds[i] = new JRadioButtonMenuItem(baudsAllowed[i]);
+	        if(lastBaud.equals(baudsAllowed[i])) buttonBauds[i].setSelected(true);
+	        buttonBauds[i].addActionListener(this);
+	        group.add(buttonBauds[i]);
+	        subMenu.add(buttonBauds[i]);
+	    }
+	    
+	    return subMenu;
+	}
+
+	public JMenu getPortMenu() {
 		JMenu subMenu = new JMenu();
 	    ButtonGroup group = new ButtonGroup();
 	    buttonPorts = new JRadioButtonMenuItem[portsDetected.length];

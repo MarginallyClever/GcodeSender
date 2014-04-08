@@ -441,7 +441,11 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         menu.setMnemonic(KeyEvent.VK_T);
         menu.getAccessibleContext().setAccessibleDescription("Connection settings.");
         
-        subMenu = arduino.getMenu();
+        subMenu = arduino.getBaudMenu();
+        subMenu.setText("Speed");
+        menu.add(subMenu);
+        
+        subMenu = arduino.getPortMenu();
         subMenu.setText("Port");
         menu.add(subMenu);
 
