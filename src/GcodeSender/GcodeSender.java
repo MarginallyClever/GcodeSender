@@ -421,6 +421,47 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         JMenu subMenu;
         
         menuBar.removeAll();
+
+        menu = new JMenu("GCodeSender");
+        
+        buttonAbout = new JMenuItem("About",KeyEvent.VK_A);
+        buttonAbout.getAccessibleContext().setAccessibleDescription("About this program");
+        buttonAbout.addActionListener(this);
+        menu.add(buttonAbout);
+
+        buttonExit = new JMenuItem("Exit",KeyEvent.VK_Q);
+        buttonExit.getAccessibleContext().setAccessibleDescription("Goodbye...");
+        buttonExit.addActionListener(this);
+        menu.add(buttonExit);
+        
+        menuBar.add(menu);
+        
+        // connection menu
+        menu = new JMenu("Connection");
+        menu.setMnemonic(KeyEvent.VK_T);
+        menu.getAccessibleContext().setAccessibleDescription("Connection settings.");
+        
+        subMenu = arduino.getMenu();
+        subMenu.setText("Port");
+        menu.add(subMenu);
+
+        buttonRescan = new JMenuItem("Rescan Ports",KeyEvent.VK_N);
+        buttonRescan.getAccessibleContext().setAccessibleDescription("Rescan the available ports.");
+        buttonRescan.addActionListener(this);
+        menu.add(buttonRescan);
+/*
+        buttonJogMotors = new JMenuItem("Jog Motors",KeyEvent.VK_J);
+        buttonJogMotors.addActionListener(this);
+        menu.add(buttonJogMotors);
+*/
+        menu.addSeparator();
+        
+        buttonDisconnect = new JMenuItem("Disconnect",KeyEvent.VK_A);
+        buttonDisconnect.addActionListener(this);
+        menu.add(buttonDisconnect);
+        
+        menuBar.add(menu);
+
 		
         // file menu.
         menu = new JMenu("File");
@@ -448,75 +489,33 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
             		menu.add(buttonRecent[i]);
             	}
         	}
-        	if(i!=0) menu.addSeparator();
         }
 
-        buttonExit = new JMenuItem("Exit",KeyEvent.VK_Q);
-        buttonExit.getAccessibleContext().setAccessibleDescription("Goodbye...");
-        buttonExit.addActionListener(this);
-        menu.add(buttonExit);
-
-        menuBar.add(menu);
-        
-        // settings menu
-        menu = new JMenu("Settings");
-        menu.setMnemonic(KeyEvent.VK_T);
-        menu.getAccessibleContext().setAccessibleDescription("Adjust the robot settings.");
-
-        subMenu = arduino.getMenu();
-        subMenu.setText("Port");
-        menu.add(subMenu);
-
-        buttonRescan = new JMenuItem("Rescan Ports",KeyEvent.VK_N);
-        buttonRescan.getAccessibleContext().setAccessibleDescription("Rescan the available ports.");
-        buttonRescan.addActionListener(this);
-        menu.add(buttonRescan);
-/*
-        buttonJogMotors = new JMenuItem("Jog Motors",KeyEvent.VK_J);
-        buttonJogMotors.addActionListener(this);
-        menu.add(buttonJogMotors);
-*/
-        menu.addSeparator();
-        
-        buttonDisconnect = new JMenuItem("Disconnect from arduinos",KeyEvent.VK_A);
-        buttonDisconnect.addActionListener(this);
-        menu.add(buttonDisconnect);
-        
         menuBar.add(menu);
 
         // action menu
         menu = new JMenu("Action");
         menu.setMnemonic(KeyEvent.VK_A);
-        menu.getAccessibleContext().setAccessibleDescription("Control robot actions.");
-        //menu.setEnabled(IsConfirmed());
+        menu.setEnabled(IsConfirmed() && fileOpened);
 
         buttonStart = new JMenuItem("Start",KeyEvent.VK_S);
         buttonStart.getAccessibleContext().setAccessibleDescription("Start sending g-code");
         buttonStart.addActionListener(this);
-    	buttonStart.setEnabled(IsConfirmed() && !running);
+    	buttonStart.setEnabled(!running);
         menu.add(buttonStart);
 
         buttonPause = new JMenuItem("Pause",KeyEvent.VK_P);
         buttonPause.getAccessibleContext().setAccessibleDescription("Pause sending g-code");
         buttonPause.addActionListener(this);
-        buttonPause.setEnabled(IsConfirmed() && running);
+        buttonPause.setEnabled(running);
         menu.add(buttonPause);
 
         buttonHalt = new JMenuItem("Halt",KeyEvent.VK_H);
         buttonHalt.getAccessibleContext().setAccessibleDescription("Halt sending g-code");
         buttonHalt.addActionListener(this);
-        buttonHalt.setEnabled(IsConfirmed() && running);
+        buttonHalt.setEnabled(running);
         menu.add(buttonHalt);
 
-        menuBar.add(menu);
-
-        menu = new JMenu("Help");
-        
-        buttonAbout = new JMenuItem("About",KeyEvent.VK_A);
-        buttonAbout.getAccessibleContext().setAccessibleDescription("About this program");
-        buttonAbout.addActionListener(this);
-        menu.add(buttonAbout);
-        
         menuBar.add(menu);
         
         // finish
