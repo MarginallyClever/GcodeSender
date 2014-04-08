@@ -2,9 +2,9 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
-	<classpathentry kind="lib" path="/Drawbot/RXTXcomm.jar">
+	<classpathentry kind="lib" path="/Users/danroyer/Documents/workspace/DrawBot/java/OSX/RXTXcomm.jar">
 		<attributes>
-			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="Drawbot/src/rxtxnative/Mac_OS_X"/>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="/Users/danroyer/Documents/workspace/GcodeSender/java"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="output" path="bin"/>

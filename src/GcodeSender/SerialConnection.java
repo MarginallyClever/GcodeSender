@@ -76,6 +76,7 @@ implements SerialPortEventListener, ActionListener {
 	private String GetLastPort(){
 		return prefs.get("last port","");
 	}
+	
 	private void SetLastPort(String portName) {
 		prefs.put("last port", portName);
 	}

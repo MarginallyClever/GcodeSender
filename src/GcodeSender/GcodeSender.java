@@ -5,6 +5,7 @@ import java.awt.Container;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -13,6 +14,8 @@ import java.util.Arrays;
 import java.util.Scanner;
 import java.util.prefs.Preferences;
 
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -21,6 +24,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
+import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -35,13 +39,18 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  */
 public class GcodeSender
 extends JPanel
-implements ActionListener, SerialConnectionReadyListener
+implements ActionListener, KeyListener, SerialConnectionReadyListener
 {
 	static final long serialVersionUID=1;
 	static final long version=1;
 	
 	static JFrame mainframe;
 	static GcodeSender singleton=null;
+	
+	// command line
+	JPanel textInputArea;
+	JTextField commandLineText;
+	JButton commandLineSend;
 	
 	// menus
 	private JMenuBar menuBar;
@@ -98,9 +107,31 @@ implements ActionListener, SerialConnectionReadyListener
 	}
 	
 	@Override
+	public void keyTyped(KeyEvent e) {}
+
+    /** Handle the key-pressed event from the text field. */
+    public void keyPressed(KeyEvent e) {}
+
+    /** Handle the key-released event from the text field. */
+    public void keyReleased(KeyEvent e) {
+		if(e.getKeyCode() == KeyEvent.VK_ENTER) {
+			if(IsConfirmed() && !running) {
+				arduino.SendCommand(commandLineText.getText());
+				commandLineText.setText("");
+			}
+		}
+	}
+	
+	@Override
 	public void actionPerformed(ActionEvent e) {
 		Object subject = e.getSource();
-		
+
+		if(subject==commandLineSend) {
+			if(IsConfirmed() && !running) {
+				arduino.SendCommand(commandLineText.getText());
+				commandLineText.setText("");
+			}
+		}
 		if(subject==buttonExit) {
 			System.exit(0);  // @TODO: be more graceful?
 			return;
@@ -216,29 +247,24 @@ implements ActionListener, SerialConnectionReadyListener
 		// tool change request?
 		String [] tokens = line.split("\\s");
 
-		String [] tools = {"black","red","blue","green"};
-		
-		// tool change?
-		if(Arrays.asList(tokens).contains("M06") || Arrays.asList(tokens).contains("M6")) {
-			for(int i=0;i<tokens.length;++i) {
-				if(tokens[i].startsWith("T")) {
-					JOptionPane.showMessageDialog(null,"Please change pen to "+tools[Integer.parseInt(tokens[i].substring(1))]+" and click OK.");
-				}
-			}
-			// still ready to send
-			return false;
-		}
-		
-		// end of program?
-		if(tokens[0]=="M02" || tokens[0]=="M2") {
-			Halt();
-			return false;
-		}
-		
-		// other machine code to ignore?
 		if(tokens[0].startsWith("M")) {
-			//Log(line+NL);
-			return false;
+			// tool change?
+			if(Arrays.asList(tokens).contains("M06") || Arrays.asList(tokens).contains("M6")) {
+				String [] tools = {"black","red","blue","green"};
+				for(int i=0;i<tokens.length;++i) {
+					if(tokens[i].startsWith("T")) {
+						JOptionPane.showMessageDialog(null,"Please change pen to "+tools[Integer.parseInt(tokens[i].substring(1))]+" and click OK.");
+					}
+				}
+				// still ready to send
+				return false;
+			}
+		
+			// end of program?
+			if(tokens[0]=="M02" || tokens[0]=="M2") {
+				Halt();
+				return false;
+			}
 		} 
 
 		// contains a comment?  if so remove it
@@ -506,16 +532,30 @@ implements ActionListener, SerialConnectionReadyListener
         return menuBar;
 	}
 	
+	public JPanel getTextInputField() {
+		textInputArea = new JPanel();
+		textInputArea.setLayout(new BoxLayout(textInputArea,BoxLayout.LINE_AXIS));
+		
+		commandLineText = new JTextField(1);
+		commandLineSend = new JButton("Send");
+		
+		textInputArea.add(commandLineText);
+		textInputArea.add(commandLineSend);
+		
+		commandLineText.addKeyListener(this);
+		commandLineSend.addActionListener(this);
+		
+		return textInputArea;
+	}
+	
 	private Container CreateContentPane() {
         JPanel contentPane = new JPanel(new BorderLayout());
         contentPane.setOpaque(true);
 
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        JSplitPane split = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        split.add(getTextInputField());
         split.add(arduino.getGUI());
-        //split.add();
-        split.setDividerSize(8);
-		split.setResizeWeight(0.33);
-		split.setDividerLocation(0.33);
+        split.setDividerSize(0);
         
         contentPane.add(split,BorderLayout.CENTER);
         
