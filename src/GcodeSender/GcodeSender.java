@@ -239,10 +239,16 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	        	if( inputLine.compareTo(version) !=0 ) {
 	        		JOptionPane.showMessageDialog(null,"A new version of this software is available.  The latest version is "+inputLine+"\n"
 	        											+"Please visit http://www.marginallyclever.com/ to get the new hotness.");
+	        	} else {
+	        		JOptionPane.showMessageDialog(null,"This version is up to date.");
 	        	}
+	        } else {
+	        	throw new Exception();
 	        }
 	        in.close();
-		} catch (Exception e) {}
+		} catch (Exception e) {
+    		JOptionPane.showMessageDialog(null,"Sorry, I failed.  Please visit http://www.marginallyclever.com/ to check yourself.");
+		}
 	}
 	
 	
@@ -379,9 +385,10 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	
 	float turtle_x,turtle_y;
 	float turtle_dx,turtle_dy;
+	float turtle_step=10.0f;
 	
 	public void DrawHilbertCurve() {
-		// http://introcs.cs.princeton.edu/java/32class/Hilbert.java.html
+		// source http://introcs.cs.princeton.edu/java/32class/Hilbert.java.html
 
 		String wd = System.getProperty("user.dir") + "/";
 		
@@ -391,16 +398,19 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			output.write(new String("G90\n").getBytes());
 			output.write(new String("G54 X-30 Z-1.0\n").getBytes());
 
-			// draw bounding box
-			float xmax = 10;
-			float xmin = -10;
-			float ymax = 10;
-			float ymin = -10;
+			// Draw bounding box
+			float xmax = 7;
+			float xmin = -7;
+			float ymax = 7;
+			float ymin = -7;
 			
 			turtle_x=0;
 			turtle_y=0;
-			turtle_dx=1;
-			turtle_dy=0;
+			turtle_dx=0;
+			turtle_dy=-1;
+			
+			int order=4; // controls complexity of curve
+			turtle_step = (float)((xmax-xmin) / (Math.pow(2, order)));
 			
 			output.write(new String("G90\n").getBytes());
 			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
@@ -410,13 +420,16 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			output.write(new String("G0 X"+xmin+" Y"+ymax+"\n").getBytes());
 			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
 			output.write(new String("G0 Z0.5\n").getBytes());
+			output.write(new String("G91\n").getBytes());
+			output.write(new String("G0 X"+(-turtle_step/2)+" Y"+(-turtle_step/2)+"\n").getBytes());
+			output.write(new String("G90\n").getBytes());
 			
 			// move to starting position
 			
 			// do the curve
 			output.write(new String("G0 Z0\n").getBytes());
 			output.write(new String("G91\n").getBytes());
-			hilbert(output,5);
+			hilbert(output,order);
 			output.write(new String("G90\n").getBytes());
 			output.write(new String("G0 Z0.5\n").getBytes());
 
@@ -435,13 +448,13 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         if (n == 0) return;
         turtle_turn(90);
         treblih(output,n-1);
-        turtle_goForward(output,1.0f);
+        turtle_goForward(output);
         turtle_turn(-90);
         hilbert(output,n-1);
-        turtle_goForward(output,1.0f);
+        turtle_goForward(output);
         hilbert(output,n-1);
         turtle_turn(-90);
-        turtle_goForward(output,1.0f);
+        turtle_goForward(output);
         treblih(output,n-1);
         turtle_turn(90);
     }
@@ -452,13 +465,13 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         if (n == 0) return;
         turtle_turn(-90);
         hilbert(output,n-1);
-        turtle_goForward(output,1.0f);
+        turtle_goForward(output);
         turtle_turn(90);
         treblih(output,n-1);
-        turtle_goForward(output,1.0f);
+        turtle_goForward(output);
         treblih(output,n-1);
         turtle_turn(90);
-        turtle_goForward(output,1.0f);
+        turtle_goForward(output);
         hilbert(output,n-1);
         turtle_turn(-90);
     }
@@ -474,11 +487,11 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
     	turtle_dy = (float)(newy/len);
     }
 
-    public void turtle_goForward(OutputStream output,float distance) throws IOException {
+    public void turtle_goForward(OutputStream output) throws IOException {
     	//turtle_x += turtle_dx * distance;
     	//turtle_y += turtle_dy * distance;
     	//output.write(new String("G0 X"+(turtle_x)+" Y"+(turtle_y)+"\n").getBytes());
-    	output.write(new String("G0 X"+(turtle_dx*distance)+" Y"+(turtle_dy*distance)+"\n").getBytes());
+    	output.write(new String("G0 X"+(turtle_dx*turtle_step)+" Y"+(turtle_dy*turtle_step)+"\n").getBytes());
     }
     
     
