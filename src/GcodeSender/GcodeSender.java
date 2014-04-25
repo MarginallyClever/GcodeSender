@@ -2,20 +2,29 @@ package GcodeSender;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.util.prefs.Preferences;
 
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -42,7 +51,7 @@ extends JPanel
 implements ActionListener, KeyListener, SerialConnectionReadyListener
 {
 	static final long serialVersionUID=1;
-	static final long version=1;
+	static final String version="1";
 	
 	static JFrame mainframe;
 	static GcodeSender singleton=null;
@@ -58,7 +67,9 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
     private JMenuItem [] buttonRecent = new JMenuItem[10];
 	private JMenuItem buttonRescan, buttonDisconnect;
 	private JMenuItem buttonStart, buttonPause, buttonHalt;
-	private JMenuItem buttonAbout;
+	private JMenuItem buttonAbout,buttonCheckForUpdate;
+	private JMenuItem buttonDrawHilbert;
+	private JMenuItem buttonDrawMessage;
 	private StatusBar statusBar;
 	
 	// serial connections
@@ -78,6 +89,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	private long linesProcessed=0;
 	private boolean fileOpened=false;
 	private ArrayList<String> gcode;
+	
 		
 	private GcodeSender() {
 		prefs = Preferences.userRoot().node("GcodeSender");
@@ -88,10 +100,12 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		arduino.addListener(this);
 	}
 	
+	
 	static public GcodeSender getSingleton() {
 		if(singleton==null) singleton=new GcodeSender();
 		return singleton;
 	}
+	
 	
 	public void SerialConnectionReady(SerialConnection arg0) {
 		if(arg0==arduino) aReady=true;
@@ -138,6 +152,14 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		}
 		if(subject==buttonOpenFile) {
 			OpenFileDialog();
+			return;
+		}
+		if(subject==buttonDrawHilbert) {
+			DrawHilbertCurve();
+			return;
+		}
+		if(subject==buttonDrawMessage) {
+			DrawMessageDialog();
 			return;
 		}
 		if(subject==buttonRescan) {
@@ -191,6 +213,10 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 					+"</body></html>");
 			return;
 		}
+		if( subject == buttonCheckForUpdate ) {
+			CheckForUpdate();
+			return;
+		}
 		
 		int i;
 		for(i=0;i<10;++i) {
@@ -199,6 +225,24 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 				return;
 			}
 		}
+	}
+	
+	
+	public void CheckForUpdate() {
+		try {
+		    // Get Github info?
+			URL github = new URL("https://www.marginallyclever.com/other/software-update-check.php?id=2");
+	        BufferedReader in = new BufferedReader(new InputStreamReader(github.openStream()));
+
+	        String inputLine;
+	        if((inputLine = in.readLine()) != null) {
+	        	if( inputLine.compareTo(version) !=0 ) {
+	        		JOptionPane.showMessageDialog(null,"A new version of this software is available.  The latest version is "+inputLine+"\n"
+	        											+"Please visit http://www.marginallyclever.com/ to get the new hotness.");
+	        	}
+	        }
+	        in.close();
+		} catch (Exception e) {}
 	}
 	
 	
@@ -333,6 +377,270 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	    Halt();
 	}
 	
+	float turtle_x,turtle_y;
+	float turtle_dx,turtle_dy;
+	
+	public void DrawHilbertCurve() {
+		// http://introcs.cs.princeton.edu/java/32class/Hilbert.java.html
+
+		String wd = System.getProperty("user.dir") + "/";
+		
+		try {
+			OutputStream output = new FileOutputStream(wd + "TEMP.NGC");
+			output.write(new String("G28\n").getBytes());
+			output.write(new String("G90\n").getBytes());
+			output.write(new String("G54 X-30 Z-1.0\n").getBytes());
+
+			// draw bounding box
+			float xmax = 10;
+			float xmin = -10;
+			float ymax = 10;
+			float ymin = -10;
+			
+			turtle_x=0;
+			turtle_y=0;
+			turtle_dx=1;
+			turtle_dy=0;
+			
+			output.write(new String("G90\n").getBytes());
+			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
+			output.write(new String("G0 Z0\n").getBytes());
+			output.write(new String("G0 X"+xmax+" Y"+ymin+"\n").getBytes());
+			output.write(new String("G0 X"+xmin+" Y"+ymin+"\n").getBytes());
+			output.write(new String("G0 X"+xmin+" Y"+ymax+"\n").getBytes());
+			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
+			output.write(new String("G0 Z0.5\n").getBytes());
+			
+			// move to starting position
+			
+			// do the curve
+			output.write(new String("G0 Z0\n").getBytes());
+			output.write(new String("G91\n").getBytes());
+			hilbert(output,5);
+			output.write(new String("G90\n").getBytes());
+			output.write(new String("G0 Z0.5\n").getBytes());
+
+			// finish up
+			output.write(new String("G28\n").getBytes());
+			
+        	output.flush();
+	        output.close();
+		}
+		catch(IOException ex) {}
+	}
+
+	
+    // Hilbert curve
+    private void hilbert(OutputStream output,int n) throws IOException {
+        if (n == 0) return;
+        turtle_turn(90);
+        treblih(output,n-1);
+        turtle_goForward(output,1.0f);
+        turtle_turn(-90);
+        hilbert(output,n-1);
+        turtle_goForward(output,1.0f);
+        hilbert(output,n-1);
+        turtle_turn(-90);
+        turtle_goForward(output,1.0f);
+        treblih(output,n-1);
+        turtle_turn(90);
+    }
+
+
+    // evruc trebliH
+    public void treblih(OutputStream output,int n) throws IOException {
+        if (n == 0) return;
+        turtle_turn(-90);
+        hilbert(output,n-1);
+        turtle_goForward(output,1.0f);
+        turtle_turn(90);
+        treblih(output,n-1);
+        turtle_goForward(output,1.0f);
+        treblih(output,n-1);
+        turtle_turn(90);
+        turtle_goForward(output,1.0f);
+        hilbert(output,n-1);
+        turtle_turn(-90);
+    }
+    
+
+    public void turtle_turn(float degrees) {
+    	double n = degrees * Math.PI / 180.0;
+    	double newx =  Math.cos(n) * turtle_dx + Math.sin(n) * turtle_dy;
+    	double newy = -Math.sin(n) * turtle_dx + Math.cos(n) * turtle_dy;
+    	double len = Math.sqrt(newx*newx + newy*newy);
+    	assert(len>0);
+    	turtle_dx = (float)(newx/len);
+    	turtle_dy = (float)(newy/len);
+    }
+
+    public void turtle_goForward(OutputStream output,float distance) throws IOException {
+    	//turtle_x += turtle_dx * distance;
+    	//turtle_y += turtle_dy * distance;
+    	//output.write(new String("G0 X"+(turtle_x)+" Y"+(turtle_y)+"\n").getBytes());
+    	output.write(new String("G0 X"+(turtle_dx*distance)+" Y"+(turtle_dy*distance)+"\n").getBytes());
+    }
+    
+    
+	/**
+	 * Create a dialog to take in the message
+	 * then generate the GCODE to write out the text
+	 */
+	public void DrawMessageDialog() {
+		final JDialog driver = new JDialog(mainframe,"Your Message Here",true);
+		driver.setLayout(new GridLayout(0,1));
+
+		final JTextField line1 = new JTextField("",10);
+		final JTextField line2 = new JTextField("",10);
+		
+		final JButton buttonSave = new JButton("Go");
+		final JButton buttonCancel = new JButton("Cancel");
+
+		driver.add(line1);
+		driver.add(line2);
+		
+		Box horizontalBox = Box.createHorizontalBox();
+	    horizontalBox.add(Box.createGlue());
+	    horizontalBox.add(buttonSave);
+	    horizontalBox.add(buttonCancel);
+	    driver.add(horizontalBox);
+		
+		ActionListener driveButtons = new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				Object subject = e.getSource();
+				
+				if(subject == buttonSave) {
+					String a1 = line1.getText();
+					String a2 = line2.getText();
+
+					String wd = System.getProperty("user.dir") + "/";
+					String ud = wd + "ALPHABET/";
+					System.out.println("Working Directory = " + ud);
+					
+					try {
+						OutputStream output = new FileOutputStream(wd + "TEMP.NGC");
+						output.write(new String("G28\n").getBytes());
+						output.write(new String("G90\n").getBytes());
+						output.write(new String("G54 X-30 Z-1.0\n").getBytes());
+
+						float len = a1.length() > a2.length() ? a1.length() : a2.length();
+						float letter_width=2.0f;
+						float letter_height=2.0f;
+						float margin=0.5f;
+						float baseline = 0.5f;
+						
+						float xmin = -len/2.0f * letter_width - margin;  // center the text, go left 50%
+						float xmax = len/2.0f * letter_width + margin;
+						float ymax, ymin;
+						if(a2.length() == 0) {
+							ymax = letter_height/2.0f + margin;
+							ymin = -(letter_height/2.0f + margin);
+							baseline = -letter_height/2.0f;
+						} else {
+							ymax = baseline + letter_height + margin;
+							ymin = -(0.5f + letter_height + margin);
+						}
+						float letter_start;
+						
+						System.out.println("x "+xmin+" to "+xmax);
+						System.out.println("y "+ymin+" to "+ymax);
+						
+						// draw bounding box
+						
+						// line 1
+						len = a1.length();
+						letter_start = -len * 0.5f * letter_width;
+						output.write(new String("G0 X"+letter_start+" Y"+baseline+"\n").getBytes());
+						// draw line of text
+						DrawMessageLine(a1,output);
+						output.write(new String("\n").getBytes());
+
+						// line 2
+						len = a2.length();
+						if( len > 0 ) {
+							baseline = -(0.5f + letter_height);
+							letter_start = -len * 0.5f * letter_width;
+							output.write(new String("G90\n").getBytes());
+							output.write(new String("G0 X"+letter_start+" Y"+baseline+"\n").getBytes());
+							// draw line of text
+							DrawMessageLine(a2,output);
+							output.write(new String("\n").getBytes());
+						}
+
+						output.write(new String("G90\n").getBytes());
+						
+						output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
+						output.write(new String("G0 Z0\n").getBytes());
+						output.write(new String("G0 X"+xmax+" Y"+ymin+"\n").getBytes());
+						output.write(new String("G0 X"+xmin+" Y"+ymin+"\n").getBytes());
+						output.write(new String("G0 X"+xmin+" Y"+ymax+"\n").getBytes());
+						output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
+						output.write(new String("G0 Z0.5\n").getBytes());
+						
+						output.write(new String("G28\n").getBytes());
+						
+			        	output.flush();
+				        output.close();
+					}
+					catch(IOException ex) {}
+					
+					driver.dispose();
+				}
+				if(subject == buttonCancel) {
+					driver.dispose();
+				}
+			}
+		};
+		
+		buttonSave.addActionListener(driveButtons);
+		buttonCancel.addActionListener(driveButtons);
+
+		driver.setSize(300,100);
+		driver.setVisible(true);
+	}
+	
+	
+	protected void DrawMessageLine(String a1,OutputStream output) throws IOException {
+		String wd = System.getProperty("user.dir") + "/";
+		String ud = wd + "ALPHABET/";
+		
+		System.out.println(a1);
+		System.out.println(a1.length());
+		int i=0;
+		for(i=0;i<a1.length();++i) {
+			char c = a1.charAt(i);
+			String name;
+			if('a'<= c && c <= 'z') {
+				name="SMALL_" + Character.toUpperCase(c);
+			} else {
+				switch(c) {
+				case ' ':  name="SPACE";  break;
+				case '.':  name="PERIOD";  break;
+				case '+':  name="PLUS";  break;
+				case '&':  name="AMPERSAND";  break;
+				case '-':  name="MINUS";  break;
+				case '!':  name="EXCLAMATION";  break;
+				default: name=Character.toString(c);  break;
+				}
+			}
+			String fn = ud + name  + ".NGC";
+			System.out.print(fn);
+			
+			if(new File(fn).isFile()) {
+				System.out.println(" OK");
+				InputStream in = new FileInputStream(fn);
+				byte[] buf = new byte[1000];
+		        int b = 0;
+		        while ( (b = in.read(buf)) >= 0) {
+		        	output.write(buf, 0, b);
+		        }
+				output.write(new String("\n").getBytes());
+			} else {
+				System.out.println(" NOK");
+			}
+		}
+	}
+	
 	/**
 	 * changes the order of the recent files list in the File submenu, saves the updated prefs, and refreshes the menus.
 	 * @param filename the file to push to the top of the list.
@@ -429,6 +737,11 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         buttonAbout.addActionListener(this);
         menu.add(buttonAbout);
 
+        
+        buttonCheckForUpdate = new JMenuItem("Check for update",KeyEvent.VK_A);
+        buttonCheckForUpdate.addActionListener(this);
+        menu.add(buttonCheckForUpdate);
+
         buttonExit = new JMenuItem("Exit",KeyEvent.VK_Q);
         buttonExit.getAccessibleContext().setAccessibleDescription("Goodbye...");
         buttonExit.addActionListener(this);
@@ -440,6 +753,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         menu = new JMenu("Connection");
         menu.setMnemonic(KeyEvent.VK_T);
         menu.getAccessibleContext().setAccessibleDescription("Connection settings.");
+        menu.setEnabled(!running);
         
         subMenu = arduino.getBaudMenu();
         subMenu.setText("Speed");
@@ -453,11 +767,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         buttonRescan.getAccessibleContext().setAccessibleDescription("Rescan the available ports.");
         buttonRescan.addActionListener(this);
         menu.add(buttonRescan);
-/*
-        buttonJogMotors = new JMenuItem("Jog Motors",KeyEvent.VK_J);
-        buttonJogMotors.addActionListener(this);
-        menu.add(buttonJogMotors);
-*/
+
         menu.addSeparator();
         
         buttonDisconnect = new JMenuItem("Disconnect",KeyEvent.VK_A);
@@ -470,6 +780,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         // file menu.
         menu = new JMenu("File");
         menu.setMnemonic(KeyEvent.VK_F);
+        menu.setEnabled(!running);
         menuBar.add(menu);
  
         buttonOpenFile = new JMenuItem("Open File...",KeyEvent.VK_O);
@@ -497,6 +808,19 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 
         menuBar.add(menu);
 
+        menu = new JMenu("Generate");
+        menu.setEnabled(!running);
+        
+        buttonDrawHilbert = new JMenuItem("Hilbert Curve");
+        buttonDrawHilbert.addActionListener(this);
+        menu.add(buttonDrawHilbert);
+        
+        buttonDrawMessage = new JMenuItem("Your name here");
+        buttonDrawMessage.addActionListener(this);
+        menu.add(buttonDrawMessage);
+
+        menuBar.add(menu);
+        
         // action menu
         menu = new JMenu("Action");
         menu.setMnemonic(KeyEvent.VK_A);

@@ -183,7 +183,7 @@ implements SerialPortEventListener, ActionListener {
 		String command;
 		try {
 			command=commandQueue.remove(0)+";";
-			Log(command+NL);
+			//Log(command+NL);
 			out.write(command.getBytes());
 			waitingForCue=true;
 		}
