@@ -2,7 +2,6 @@ package GcodeSender;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
-import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -10,21 +9,16 @@ import java.awt.event.KeyListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 import java.util.prefs.Preferences;
 
-import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -37,6 +31,10 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+import GcodeSender.Generators.GcodeGenerator;
+import GcodeSender.Generators.HilbertCurveGenerator;
+import GcodeSender.Generators.YourMessageHereGenerator;
 
 
 /**
@@ -53,8 +51,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	static final long serialVersionUID=1;
 	static final String version="1";
 	
-	static JFrame mainframe;
-	static GcodeSender singleton=null;
+	static protected GcodeSender singleton=null;
 	
 	// command line
 	JPanel textInputArea;
@@ -62,14 +59,13 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	JButton commandLineSend;
 	
 	// menus
+	static private JFrame mainframe;
 	private JMenuBar menuBar;
 	private JMenuItem buttonOpenFile, buttonExit;
     private JMenuItem [] buttonRecent = new JMenuItem[10];
 	private JMenuItem buttonRescan, buttonDisconnect;
 	private JMenuItem buttonStart, buttonPause, buttonHalt;
 	private JMenuItem buttonAbout,buttonCheckForUpdate;
-	private JMenuItem buttonDrawHilbert;
-	private JMenuItem buttonDrawMessage;
 	private StatusBar statusBar;
 	
 	// serial connections
@@ -90,20 +86,65 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	private boolean fileOpened=false;
 	private ArrayList<String> gcode;
 	
-		
+	// Generators
+	GcodeGenerator [] generators;
+	JMenuItem generatorButtons[];
+
+	
+	public JFrame GetMainFrame() {
+		return mainframe;
+	}
+	
+	static public GcodeSender getSingleton() {
+		if(singleton==null) singleton=new GcodeSender();
+		return singleton;
+	}
+	
+	
 	private GcodeSender() {
 		prefs = Preferences.userRoot().node("GcodeSender");
 		
 		LoadConfig();
+		
+		LoadGenerators();
 		
 		arduino = new SerialConnection("Arduino");
 		arduino.addListener(this);
 	}
 	
 	
-	static public GcodeSender getSingleton() {
-		if(singleton==null) singleton=new GcodeSender();
-		return singleton;
+	protected void LoadGenerators() {
+		// TODO find the generator jar files and load them.
+		generators = new GcodeGenerator[2];
+		generators[0] = new HilbertCurveGenerator();
+		generators[1] = new YourMessageHereGenerator();
+		
+		generatorButtons = new JMenuItem[2];
+	}
+	
+	protected JMenu LoadGenerateMenu() {
+		JMenu menu = new JMenu("Generate");
+        menu.setEnabled(!running);
+        
+        for(int i=0;i<generators.length;++i) {
+        	generatorButtons[i] = new JMenuItem(generators[i].GetMenuName());
+        	generatorButtons[i].addActionListener(this);
+        	menu.add(generatorButtons[i]);
+        }
+        
+        return menu;
+	}
+	
+	protected boolean GeneratorMenuAction(ActionEvent e) {
+		Object subject = e.getSource();
+		
+        for(int i=0;i<generators.length;++i) {
+        	if(subject==generatorButtons[i]) {
+        		generators[i].Generate();
+        		return true;
+        	}
+		}
+		return false;
 	}
 	
 	
@@ -154,12 +195,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			OpenFileDialog();
 			return;
 		}
-		if(subject==buttonDrawHilbert) {
-			DrawHilbertCurve();
-			return;
-		}
-		if(subject==buttonDrawMessage) {
-			DrawMessageDialog();
+		if(GeneratorMenuAction(e)) {
 			return;
 		}
 		if(subject==buttonRescan) {
@@ -383,276 +419,6 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	    Halt();
 	}
 	
-	float turtle_x,turtle_y;
-	float turtle_dx,turtle_dy;
-	float turtle_step=10.0f;
-	
-	public void DrawHilbertCurve() {
-		// source http://introcs.cs.princeton.edu/java/32class/Hilbert.java.html
-
-		String wd = System.getProperty("user.dir") + "/";
-		
-		try {
-			OutputStream output = new FileOutputStream(wd + "TEMP.NGC");
-			output.write(new String("G28\n").getBytes());
-			output.write(new String("G90\n").getBytes());
-			output.write(new String("G54 X-30 Z-1.0\n").getBytes());
-
-			// Draw bounding box
-			float xmax = 7;
-			float xmin = -7;
-			float ymax = 7;
-			float ymin = -7;
-			
-			turtle_x=0;
-			turtle_y=0;
-			turtle_dx=0;
-			turtle_dy=-1;
-			
-			int order=4; // controls complexity of curve
-			turtle_step = (float)((xmax-xmin) / (Math.pow(2, order)));
-			
-			output.write(new String("G90\n").getBytes());
-			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
-			output.write(new String("G0 Z0\n").getBytes());
-			output.write(new String("G0 X"+xmax+" Y"+ymin+"\n").getBytes());
-			output.write(new String("G0 X"+xmin+" Y"+ymin+"\n").getBytes());
-			output.write(new String("G0 X"+xmin+" Y"+ymax+"\n").getBytes());
-			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
-			output.write(new String("G0 Z0.5\n").getBytes());
-			output.write(new String("G91\n").getBytes());
-			output.write(new String("G0 X"+(-turtle_step/2)+" Y"+(-turtle_step/2)+"\n").getBytes());
-			output.write(new String("G90\n").getBytes());
-			
-			// move to starting position
-			
-			// do the curve
-			output.write(new String("G0 Z0\n").getBytes());
-			output.write(new String("G91\n").getBytes());
-			hilbert(output,order);
-			output.write(new String("G90\n").getBytes());
-			output.write(new String("G0 Z0.5\n").getBytes());
-
-			// finish up
-			output.write(new String("G28\n").getBytes());
-			
-        	output.flush();
-	        output.close();
-		}
-		catch(IOException ex) {}
-	}
-
-	
-    // Hilbert curve
-    private void hilbert(OutputStream output,int n) throws IOException {
-        if (n == 0) return;
-        turtle_turn(90);
-        treblih(output,n-1);
-        turtle_goForward(output);
-        turtle_turn(-90);
-        hilbert(output,n-1);
-        turtle_goForward(output);
-        hilbert(output,n-1);
-        turtle_turn(-90);
-        turtle_goForward(output);
-        treblih(output,n-1);
-        turtle_turn(90);
-    }
-
-
-    // evruc trebliH
-    public void treblih(OutputStream output,int n) throws IOException {
-        if (n == 0) return;
-        turtle_turn(-90);
-        hilbert(output,n-1);
-        turtle_goForward(output);
-        turtle_turn(90);
-        treblih(output,n-1);
-        turtle_goForward(output);
-        treblih(output,n-1);
-        turtle_turn(90);
-        turtle_goForward(output);
-        hilbert(output,n-1);
-        turtle_turn(-90);
-    }
-    
-
-    public void turtle_turn(float degrees) {
-    	double n = degrees * Math.PI / 180.0;
-    	double newx =  Math.cos(n) * turtle_dx + Math.sin(n) * turtle_dy;
-    	double newy = -Math.sin(n) * turtle_dx + Math.cos(n) * turtle_dy;
-    	double len = Math.sqrt(newx*newx + newy*newy);
-    	assert(len>0);
-    	turtle_dx = (float)(newx/len);
-    	turtle_dy = (float)(newy/len);
-    }
-
-    public void turtle_goForward(OutputStream output) throws IOException {
-    	//turtle_x += turtle_dx * distance;
-    	//turtle_y += turtle_dy * distance;
-    	//output.write(new String("G0 X"+(turtle_x)+" Y"+(turtle_y)+"\n").getBytes());
-    	output.write(new String("G0 X"+(turtle_dx*turtle_step)+" Y"+(turtle_dy*turtle_step)+"\n").getBytes());
-    }
-    
-    
-	/**
-	 * Create a dialog to take in the message
-	 * then generate the GCODE to write out the text
-	 */
-	public void DrawMessageDialog() {
-		final JDialog driver = new JDialog(mainframe,"Your Message Here",true);
-		driver.setLayout(new GridLayout(0,1));
-
-		final JTextField line1 = new JTextField("",10);
-		final JTextField line2 = new JTextField("",10);
-		
-		final JButton buttonSave = new JButton("Go");
-		final JButton buttonCancel = new JButton("Cancel");
-
-		driver.add(line1);
-		driver.add(line2);
-		
-		Box horizontalBox = Box.createHorizontalBox();
-	    horizontalBox.add(Box.createGlue());
-	    horizontalBox.add(buttonSave);
-	    horizontalBox.add(buttonCancel);
-	    driver.add(horizontalBox);
-		
-		ActionListener driveButtons = new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				Object subject = e.getSource();
-				
-				if(subject == buttonSave) {
-					String a1 = line1.getText();
-					String a2 = line2.getText();
-
-					String wd = System.getProperty("user.dir") + "/";
-					String ud = wd + "ALPHABET/";
-					System.out.println("Working Directory = " + ud);
-					
-					try {
-						OutputStream output = new FileOutputStream(wd + "TEMP.NGC");
-						output.write(new String("G28\n").getBytes());
-						output.write(new String("G90\n").getBytes());
-						output.write(new String("G54 X-30 Z-1.0\n").getBytes());
-
-						float len = a1.length() > a2.length() ? a1.length() : a2.length();
-						float letter_width=2.0f;
-						float letter_height=2.0f;
-						float margin=0.5f;
-						float baseline = 0.5f;
-						
-						float xmin = -len/2.0f * letter_width - margin;  // center the text, go left 50%
-						float xmax = len/2.0f * letter_width + margin;
-						float ymax, ymin;
-						if(a2.length() == 0) {
-							ymax = letter_height/2.0f + margin;
-							ymin = -(letter_height/2.0f + margin);
-							baseline = -letter_height/2.0f;
-						} else {
-							ymax = baseline + letter_height + margin;
-							ymin = -(0.5f + letter_height + margin);
-						}
-						float letter_start;
-						
-						System.out.println("x "+xmin+" to "+xmax);
-						System.out.println("y "+ymin+" to "+ymax);
-						
-						// draw bounding box
-						
-						// line 1
-						len = a1.length();
-						letter_start = -len * 0.5f * letter_width;
-						output.write(new String("G0 X"+letter_start+" Y"+baseline+"\n").getBytes());
-						// draw line of text
-						DrawMessageLine(a1,output);
-						output.write(new String("\n").getBytes());
-
-						// line 2
-						len = a2.length();
-						if( len > 0 ) {
-							baseline = -(0.5f + letter_height);
-							letter_start = -len * 0.5f * letter_width;
-							output.write(new String("G90\n").getBytes());
-							output.write(new String("G0 X"+letter_start+" Y"+baseline+"\n").getBytes());
-							// draw line of text
-							DrawMessageLine(a2,output);
-							output.write(new String("\n").getBytes());
-						}
-
-						output.write(new String("G90\n").getBytes());
-						
-						output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
-						output.write(new String("G0 Z0\n").getBytes());
-						output.write(new String("G0 X"+xmax+" Y"+ymin+"\n").getBytes());
-						output.write(new String("G0 X"+xmin+" Y"+ymin+"\n").getBytes());
-						output.write(new String("G0 X"+xmin+" Y"+ymax+"\n").getBytes());
-						output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
-						output.write(new String("G0 Z0.5\n").getBytes());
-						
-						output.write(new String("G28\n").getBytes());
-						
-			        	output.flush();
-				        output.close();
-					}
-					catch(IOException ex) {}
-					
-					driver.dispose();
-				}
-				if(subject == buttonCancel) {
-					driver.dispose();
-				}
-			}
-		};
-		
-		buttonSave.addActionListener(driveButtons);
-		buttonCancel.addActionListener(driveButtons);
-
-		driver.setSize(300,100);
-		driver.setVisible(true);
-	}
-	
-	
-	protected void DrawMessageLine(String a1,OutputStream output) throws IOException {
-		String wd = System.getProperty("user.dir") + "/";
-		String ud = wd + "ALPHABET/";
-		
-		System.out.println(a1);
-		System.out.println(a1.length());
-		int i=0;
-		for(i=0;i<a1.length();++i) {
-			char c = a1.charAt(i);
-			String name;
-			if('a'<= c && c <= 'z') {
-				name="SMALL_" + Character.toUpperCase(c);
-			} else {
-				switch(c) {
-				case ' ':  name="SPACE";  break;
-				case '.':  name="PERIOD";  break;
-				case '+':  name="PLUS";  break;
-				case '&':  name="AMPERSAND";  break;
-				case '-':  name="MINUS";  break;
-				case '!':  name="EXCLAMATION";  break;
-				default: name=Character.toString(c);  break;
-				}
-			}
-			String fn = ud + name  + ".NGC";
-			System.out.print(fn);
-			
-			if(new File(fn).isFile()) {
-				System.out.println(" OK");
-				InputStream in = new FileInputStream(fn);
-				byte[] buf = new byte[1000];
-		        int b = 0;
-		        while ( (b = in.read(buf)) >= 0) {
-		        	output.write(buf, 0, b);
-		        }
-				output.write(new String("\n").getBytes());
-			} else {
-				System.out.println(" NOK");
-			}
-		}
-	}
 	
 	/**
 	 * changes the order of the recent files list in the File submenu, saves the updated prefs, and refreshes the menus.
@@ -821,16 +587,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 
         menuBar.add(menu);
 
-        menu = new JMenu("Generate");
-        menu.setEnabled(!running);
-        
-        buttonDrawHilbert = new JMenuItem("Hilbert Curve");
-        buttonDrawHilbert.addActionListener(this);
-        menu.add(buttonDrawHilbert);
-        
-        buttonDrawMessage = new JMenuItem("Your name here");
-        buttonDrawMessage.addActionListener(this);
-        menu.add(buttonDrawMessage);
+        menu = LoadGenerateMenu();
 
         menuBar.add(menu);
         
