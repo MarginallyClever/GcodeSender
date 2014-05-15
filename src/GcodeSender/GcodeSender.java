@@ -212,8 +212,8 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			if(fileOpened) {
 				paused=false;
 				running=true;
-				UpdateMenuBar();
 				linesProcessed=0;
+				UpdateMenuBar();
 				//previewPane.setRunning(running);
 				//previewPane.setLinesProcessed(linesProcessed);
 				//statusBar.Start();

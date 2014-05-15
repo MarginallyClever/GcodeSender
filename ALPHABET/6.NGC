@@ -1,8 +1,6 @@
-G90
-G0 Z0.5
-G91
+UP
 G0 Y1
-G0 Z-0.5
+DOWN
 
 G0 X1
 G0 Y-1
@@ -10,7 +8,5 @@ G0 X-1
 G0 Y2
 G0 X1
 
-G90
-G0 Z0.5
-G91
-G0 X1 Y-2
+UP
+G0 Y-2
