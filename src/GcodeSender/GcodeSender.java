@@ -330,6 +330,8 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	 * @return true if the command is sent to the robot.
 	 */
 	public boolean SendLineToRobot(String line) {
+		if(line.length()==0 || line.equals(";")) return false;
+		
 		// tool change request?
 		String [] tokens = line.split("\\s");
 

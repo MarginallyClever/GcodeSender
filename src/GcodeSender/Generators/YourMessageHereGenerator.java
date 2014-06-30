@@ -16,17 +16,19 @@ import java.util.StringTokenizer;
 import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 import GcodeSender.GcodeSender;
 
 public class YourMessageHereGenerator implements GcodeGenerator {
 	// machine properties
-	protected float feed_rate=500.0f;
-	protected float feed_rate_rapid=2000.0f;
-	protected float up_height=90.0f;
-	protected float down_height=40.0f;
+	protected float feed_rate=1800.0f;
+	protected float feed_rate_rapid=3000.0f;
+	protected float z_up=3.0f;
+	protected float z_down=1.8f;
 	protected float scale=1.0f;
 	
 	// font properties
@@ -63,11 +65,17 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		driver.setLayout(new GridLayout(0,1));
 
 		final JTextArea text = new JTextArea(lastMessage,40,4);
+
+		driver.add(new JLabel("Message"));
+		driver.add(new JScrollPane(text));
+
+		final JTextField field_up = new JTextField(Float.toString(z_up));
+		final JTextField field_down = new JTextField(Float.toString(z_down));
+		driver.add(new JLabel("Up"));		driver.add(field_up);
+		driver.add(new JLabel("Down"));		driver.add(field_down);
+
 		final JButton buttonSave = new JButton("Go");
 		final JButton buttonCancel = new JButton("Cancel");
-
-		driver.add(new JScrollPane(text));
-		
 		Box horizontalBox = Box.createHorizontalBox();
 	    horizontalBox.add(Box.createGlue());
 	    horizontalBox.add(buttonSave);
@@ -79,6 +87,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 				Object subject = e.getSource();
 				
 				if(subject == buttonSave) {
+					z_up = Float.parseFloat(field_up.getText());
+					z_down = Float.parseFloat(field_down.getText());
 					lastMessage=text.getText();
 					TextCreateMessageNow(lastMessage);
 					// open the file automatically to save a click.
@@ -95,13 +105,13 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		buttonSave.addActionListener(driveButtons);
 		buttonCancel.addActionListener(driveButtons);
 
-		driver.setSize(300,100);
+		driver.setSize(300,300);
 		driver.setVisible(true);
 	}
 
 	
 	protected String [] SplitForLength(String src) {
-		String [] test_lines = src.split("\n");
+		String [] test_lines = src.split(";\n");
 		int i,j;
 		
 		int num_lines = 0;
@@ -144,15 +154,18 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		
 		try {
 			OutputStreamWriter output = new OutputStreamWriter(new FileOutputStream(outputFile),"UTF-8");
-			output.write("G28\n");
-			output.write("G90\n");
-			posy=25;
-			//output.write("G54\n");
+			output.write("G28;\n");
+			output.write("G90;\n");
+			//posy=250;
+			output.write("G54 Y26;\n");
+			output.write("G0 X20 F"+feed_rate_rapid+";\n");
+			output.write("G0 Y0;\n");
+			output.write("G0 X0;\n");
 
 			TextCreateMessageNow(text,output);
 
-			output.write(("G90\n"));
-			output.write(("G0 Z5 F2000\n"));
+			output.write(("G90;\n"));
+			output.write(("G0 Z15 F"+feed_rate_rapid+";\n"));
 			
         	output.flush();
 	        output.close();
@@ -206,6 +219,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 			TextDrawLine(lines[i],output);
 		}
 
+		output.write("G90;\n");
 		liftPen(output);
 	}
 	
@@ -281,13 +295,13 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		        while ( (b = in.readLine()) != null ) {
 		        	if(b.trim().length()==0) continue;
 		        	if(b.equals("UP")) {
-		         		output.write("G90\n");
+		         		output.write("G90;\n");
 		        		liftPen(output);
-		         		output.write("G91\n");
+		         		output.write("G91;\n");
 		        	} else if(b.equals("DOWN")) { 
-		         		output.write("G90\n");
+		         		output.write("G90;\n");
 						lowerPen(output);
-		         		output.write("G91\n");
+		         		output.write("G91;\n");
 		        	} else {
 		        		StringTokenizer st = new StringTokenizer(b);
 		        		String gap="";
@@ -336,13 +350,11 @@ public class YourMessageHereGenerator implements GcodeGenerator {
  	}
  	
  	protected void liftPen(OutputStreamWriter output) throws IOException {
- 		output.write("G0 F1500 Z"+up_height+"\n");
- 		output.write("G0 F"+feed_rate_rapid+"\n");
+ 		output.write("G0 F"+feed_rate_rapid+" Z"+z_up+";\n");
  	}
  	
  	protected void lowerPen(OutputStreamWriter output) throws IOException {
-		output.write("G0 F1500 Z"+down_height+"\n");
- 		output.write("G0 F"+feed_rate+"\n");
+		output.write("G0 F"+feed_rate+" Z"+z_down+";\n");
 	}
 
 	

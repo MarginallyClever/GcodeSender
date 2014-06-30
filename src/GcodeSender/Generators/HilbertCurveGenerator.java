@@ -11,8 +11,6 @@ import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import GcodeSender.GcodeSender;
@@ -65,11 +63,13 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 				Object subject = e.getSource();
 				
 				if(subject == buttonSave) {
-					xmax = Integer.decode(field_size.getText());
+					z_up = Float.parseFloat(field_up.getText());
+					z_down = Float.parseFloat(field_down.getText());
+					xmax = Integer.parseInt(field_size.getText());
 					ymax= xmax;
 					xmin=-xmax;
 					ymin=-xmax;
-					order = Integer.decode(field_order.getText());
+					order = Integer.parseInt(field_order.getText());
 					CreateCurveNow();
 					
 					driver.dispose();
@@ -83,7 +83,7 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 		buttonSave.addActionListener(driveButtons);
 		buttonCancel.addActionListener(driveButtons);
 
-		driver.setSize(300,100);
+		driver.setSize(300,400);
 		driver.setVisible(true);
 	}
 	
