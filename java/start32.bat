@@ -17,7 +17,7 @@ if defined JAVA_HOME (
   goto end
 )
 
-"%JAVA_HOME%\bin\java.exe" -classpath RXTXcomm.jar -Djava.library.path=32 -jar Makelangelo.jar
+"%JAVA_HOME%\bin\java.exe"  -jar Makelangelo.jar
 
 :end
 @pause
