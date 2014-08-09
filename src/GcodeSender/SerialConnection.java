@@ -168,7 +168,9 @@ implements SerialPortEventListener, ActionListener {
 		String command;
 		try {
 			command=commandQueue.remove(0);
-			if(command.endsWith(";")==false) command+=";";
+			//if(command.endsWith(";")==false) command+=";";
+			if(command.endsWith("\n")==false) command+="\n";
+			
 			//Log(command+NL);
 			serialPort.writeBytes(command.getBytes());
 			waitingForCue=true;
