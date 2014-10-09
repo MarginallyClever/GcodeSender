@@ -235,9 +235,7 @@ implements SerialPortEventListener, ActionListener {
 		ClosePort();
 		
 		Log("Connecting to "+portName+"..."+NL);
-
-		Log("<font color='green'>Connecting to "+portName+"...</font>\n");
-		
+	
 		// open the port
 		serialPort = new SerialPort(portName);
 		try {

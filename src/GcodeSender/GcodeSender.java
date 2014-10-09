@@ -64,7 +64,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	private JMenuItem buttonOpenFile, buttonExit;
     private JMenuItem [] buttonRecent = new JMenuItem[10];
 	private JMenuItem buttonRescan, buttonDisconnect;
-	private JMenuItem buttonStart, buttonPause, buttonHalt;
+	private JMenuItem buttonStart, buttonOneAtATime, buttonPause, buttonHalt;
 	private JMenuItem buttonAbout,buttonCheckForUpdate;
 	private StatusBar statusBar;
 	
@@ -81,6 +81,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	// files
 	private boolean running=false;
 	private boolean paused=true;
+	private boolean oneAtATime=false;
     private long linesTotal=0;
 	private long linesProcessed=0;
 	private boolean fileOpened=false;
@@ -176,6 +177,20 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			}
 		}
 	}
+    
+    private void StartDrawing() {
+    	//if(fileOpened) OpenFile(recentFiles[0]);
+		if(fileOpened) {
+			paused=false;
+			running=true;
+			linesProcessed=0;
+			UpdateMenuBar();
+			//previewPane.setRunning(running);
+			//previewPane.setLinesProcessed(linesProcessed);
+			//statusBar.Start();
+			SendFileCommand();
+		}
+    }
 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -208,17 +223,13 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			return;
 		}
 		if(subject==buttonStart) {
-			//if(fileOpened) OpenFile(recentFiles[0]);
-			if(fileOpened) {
-				paused=false;
-				running=true;
-				linesProcessed=0;
-				UpdateMenuBar();
-				//previewPane.setRunning(running);
-				//previewPane.setLinesProcessed(linesProcessed);
-				//statusBar.Start();
-				SendFileCommand();
-			}
+			oneAtATime=false;
+			StartDrawing();
+			return;
+		}
+		if(subject==buttonOneAtATime) {
+			oneAtATime=true;
+			StartDrawing();
 			return;
 		}
 		if( subject == buttonPause ) {
@@ -302,26 +313,38 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	}
 
 	
+	protected boolean inSendNow=false;
 	/**
 	 * Take the next line from the file and send it to the robot, if permitted. 
 	 */
 	public void SendFileCommand() {
-		if(running==false || paused==true || fileOpened==false || IsConfirmed()==false || linesProcessed>=linesTotal) return;
+		if(inSendNow || running==false || paused==true || fileOpened==false || IsConfirmed()==false || linesProcessed>=linesTotal) return;
+		
+		inSendNow=true;
 		
 		String line;
-		do {			
+		do {
 			// are there any more commands?
 			line=gcode.get((int)linesProcessed++).trim();
 			//previewPane.setLinesProcessed(linesProcessed);
 			//statusBar.SetProgress(linesProcessed, linesTotal);
 			// loop until we find a line that gets sent to the robot, at which point we'll
-			// pause for the robot to respond.  Also stop at end of file.
+			// pause for the robot to respond.  Also stop at end of file.			
+			if( oneAtATime && line.length()>0 ) {
+				int n = JOptionPane.showConfirmDialog(mainframe,line,"line "+linesProcessed,JOptionPane.OK_CANCEL_OPTION);
+				if(n == JOptionPane.CANCEL_OPTION) {
+					Halt();
+					break;
+				}
+			}
 		} while(!SendLineToRobot(line) && linesProcessed<linesTotal);
 		
 		if(linesProcessed==linesTotal) {
 			// end of file
 			Halt();
 		}
+		
+		inSendNow=false;
 	}
 	
 	/**
@@ -603,6 +626,12 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         buttonStart.addActionListener(this);
     	buttonStart.setEnabled(!running);
         menu.add(buttonStart);
+
+        buttonOneAtATime = new JMenuItem("Start Debug",KeyEvent.VK_S);
+        buttonOneAtATime.getAccessibleContext().setAccessibleDescription("Start sending g-code one line at a time");
+        buttonOneAtATime.addActionListener(this);
+        buttonOneAtATime.setEnabled(!running);
+        menu.add(buttonOneAtATime);
 
         buttonPause = new JMenuItem("Pause",KeyEvent.VK_P);
         buttonPause.getAccessibleContext().setAccessibleDescription("Pause sending g-code");

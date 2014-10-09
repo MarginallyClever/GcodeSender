@@ -26,7 +26,7 @@ import GcodeSender.GcodeSender;
 public class YourMessageHereGenerator implements GcodeGenerator {
 	// machine properties
 	protected float feed_rate=1800.0f;
-	protected float feed_rate_rapid=3000.0f;
+	protected float feed_rate_rapid=8000.0f;
 	protected float z_up=3.0f;
 	protected float z_down=1.8f;
 	protected float scale=1.0f;
@@ -156,8 +156,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 			OutputStreamWriter output = new OutputStreamWriter(new FileOutputStream(outputFile),"UTF-8");
 			output.write("G28;\n");
 			output.write("G90;\n");
-			//posy=250;
-			output.write("G54 Y26;\n");
+			output.write("G54 Y-26;\n");
+			output.write("G0 A1;\n");
 			output.write("G0 X20 F"+feed_rate_rapid+";\n");
 			output.write("G0 Y0;\n");
 			output.write("G0 X0;\n");
@@ -346,7 +346,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
  	}
  	
  	protected float SY(float y) {
- 		return y*scale;
+ 		return y*-scale;
  	}
  	
  	protected void liftPen(OutputStreamWriter output) throws IOException {

@@ -17,7 +17,7 @@ if defined JAVA_HOME (
   goto end
 )
 
-"%JAVA_HOME%\bin\java.exe" -jar Makelangelo.jar
+"%JAVA_HOME%\bin\java.exe" -jar gcodesender.jar
 
 :end
 @pause
