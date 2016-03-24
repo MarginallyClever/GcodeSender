@@ -1,4 +1,4 @@
-package GcodeSender;
+package com.marginallyclever.gcodesender;
 
 
 import jssc.*;
@@ -17,10 +17,17 @@ import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
+import com.marginallyclever.gcodesender.SerialConnectionReadyListener;
+
 public class SerialConnection
 implements SerialPortEventListener, ActionListener {
-	private static String cue=">";
-	private static String NL="\n";
+	static final String CUE = "> ";
+	static final String NOCHECKSUM = "NOCHECKSUM ";
+	static final String BADCHECKSUM = "BADCHECKSUM ";
+	static final String BADLINENUM = "BADLINENUM ";
+	static final String NEWLINE = "\n";
+	static final String COMMENT_START = ";";
+
 	
 	private String[] portsDetected;
 	
@@ -29,7 +36,7 @@ implements SerialPortEventListener, ActionListener {
 	
 	public SerialPort serialPort;
 	public boolean portOpened=false;
-	public boolean portConfirmed=false;
+
 	public String portName;
 	public boolean waitingForCue=true;
 	
@@ -43,7 +50,7 @@ implements SerialPortEventListener, ActionListener {
     private JMenuItem [] buttonBauds;
     
     // communications
-    String line3;
+    String inputBuffer;
     ArrayList<String> commandQueue = new ArrayList<String>();
 
     // Listeners which should be notified of a change to the percentage.
@@ -84,85 +91,137 @@ implements SerialPortEventListener, ActionListener {
 		log.setCaretPosition(log.getText().length());
 	}
 	
-	public boolean ConfirmPort() {
-		if(!portOpened) return false;
-		
-		// for gcodeSender we won't validate the connection, we'll just assume it's connected to the right machine.
-/*
-		if(portConfirmed) return true;
-		
-		String hello = "StewartPlatform v4";
-		int found=line3.lastIndexOf(hello);
-		if(found >= 0) {
-			// get the UID reported by the robot
-			String[] lines = line3.substring(found+hello.length()).split("\\r?\\n");
-			if(lines.length>0) {
-				try {
-					robot_uid = Long.parseLong(lines[0]);
-				}
-				catch(NumberFormatException e) {}
-			}
-			
-			// new robots have UID=0
-			if(robot_uid==0) {
-				// Try to set a new one
-				GetNewRobotUID();
-			}
-			mainframe.setTitle("Drawbot #"+Long.toString(robot_uid));
-
-			// load machine specific config
-			LoadConfig();
-			if(limit_top==0 && limit_bottom==0 && limit_left==0 && limit_right==0) {
-				UpdateConfig();
-			} else {
-				SendConfig();
-			}
-			previewPane.setMachineLimits(limit_top, limit_bottom, limit_left, limit_right);
-			
-			// load last known paper for this machine
-			GetRecentPaperSize();
-			if(paper_top==0 && paper_bottom==0 && paper_left==0 && paper_right==0) {
-				UpdatePaper();
-			}
-
-			portConfirmed=true;
-		}
-		return portConfirmed;
-*/
-		portConfirmed=true;
-		return true;
-	}
-	
 	@Override
 	public void serialEvent(SerialPortEvent events) {
+		String rawInput, oneLine;
+		int x;
+		
         if(events.isRXCHAR()) {
         	if(!portOpened) return;
             try {
             	int len = events.getEventValue();
 				byte [] buffer = serialPort.readBytes(len);
 				if( len>0 ) {
-					String line2 = new String(buffer,0,len);
-					Log(line2);
-					line3+=line2;
-					// wait for the cue to send another command
-					if(line3.lastIndexOf(cue)!=-1) {
-						waitingForCue=false;
-						if(ConfirmPort()) {
-							line3="";
-							SendQueuedCommand();
+					rawInput = new String(buffer,0,len);
+					inputBuffer+=rawInput;
+					// each line ends with a \n.
+					for( x=inputBuffer.indexOf("\n"); x!=-1; x=inputBuffer.indexOf("\n") ) {
+						x=x+1;
+						oneLine = inputBuffer.substring(0,x);
+						inputBuffer = inputBuffer.substring(x);
+
+						// check for error
+						int error_line = errorReported(oneLine);
+	                    if(error_line != -1) {
+	                    	notifyLineError(error_line);
+	                    } else {
+	                    	// no error
+	                    	//if(oneLine.indexOf(CUE)!=0 || waitingForCue==false) 
+	                    	{
+	                    		notifyDataAvailable(oneLine);
+	                    	}
+	                    }
+	                    
+	                    // wait for the cue to send another command
+						if(oneLine.indexOf(CUE)==0) {
+							waitingForCue=false;
 						}
+					}
+					if(waitingForCue==false) {
+						sendQueuedCommand();
 					}
 				}
             } catch (SerialPortException e) {}
         }
 	}
+
+	private void notifyLineError(int lineNumber) {
+	      for (SerialConnectionReadyListener listener : listeners) {
+	          listener.lineError(this,lineNumber);
+	        }
+	}
 	
-	protected void SendQueuedCommand() {
+    private void notifyConnectionReady() {
+      for (SerialConnectionReadyListener listener : listeners) {
+        listener.connectionReady(this);
+      }
+    }
+	
+	// tell all listeners data has arrived
+	private void notifyDataAvailable(String line) {
+	      for (SerialConnectionReadyListener listener : listeners) {
+	        listener.dataAvailable(this,line);
+	      }
+	}
+
+
+	/**
+	 * Check if the robot reports an error and if so what line number.
+	 *
+	 * @return -1 if there was no error, otherwise the line number containing the error.
+	 */
+	protected int errorReported(String line) {
+		if (line.lastIndexOf(NOCHECKSUM) != -1) {
+			String after_error = line.substring(line.lastIndexOf(NOCHECKSUM) + NOCHECKSUM.length());
+			String x = getNumberPortion(after_error);
+			int err = 0;
+			try {
+				err = Integer.decode(x);
+			} catch (Exception e) {
+			}
+
+			return err;
+		}
+		if (line.lastIndexOf(BADCHECKSUM) != -1) {
+			String after_error = line.substring(line.lastIndexOf(BADCHECKSUM) + BADCHECKSUM.length());
+			String x = getNumberPortion(after_error);
+			int err = 0;
+			try {
+				err = Integer.decode(x);
+			} catch (Exception e) {
+			}
+
+			return err;
+		}
+		if (line.lastIndexOf(BADLINENUM) != -1) {
+			String after_error = line.substring(line.lastIndexOf(BADLINENUM) + BADLINENUM.length());
+			String x = getNumberPortion(after_error);
+			int err = 0;
+			try {
+				err = Integer.decode(x);
+			} catch (Exception e) {
+			}
+
+			return err;
+		}
+
+		return -1;
+	}
+	/**
+	 * Java string to int is very picky.  this method is slightly less picky.  Only works with positive whole numbers.
+	 *
+	 * @param src
+	 * @return the portion of the string that is actually a number
+	 */
+	private String getNumberPortion(String src) {
+		src = src.trim();
+		int length = src.length();
+		String result = "";
+		for (int i = 0; i < length; i++) {
+			Character character = src.charAt(i);
+			if (Character.isDigit(character)) {
+				result += character;
+			}
+		}
+		return result;
+	}
+	
+	protected void sendQueuedCommand() {
 		if(!portOpened || waitingForCue) return;
 		
 		if(commandQueue.size()==0) {
-		      notifyListeners();
-		      return;
+			notifyConnectionReady();
+		    return;
 		}
 		
 		String command;
@@ -183,7 +242,7 @@ implements SerialPortEventListener, ActionListener {
 		if(!portOpened) return;
 		
 		commandQueue.add(command);
-		if(portConfirmed) SendQueuedCommand();
+		sendQueuedCommand();
 	}
 	
 	// find all available serial ports for the settings->ports menu.
@@ -224,7 +283,6 @@ implements SerialPortEventListener, ActionListener {
 	    }
 
 		portOpened=false;
-		portConfirmed=false;
 	}
 	
 	// open a serial connection to a device.  We won't know it's the robot until  
@@ -234,13 +292,14 @@ implements SerialPortEventListener, ActionListener {
 		
 		ClosePort();
 		
-		Log("Connecting to "+portName+"..."+NL);
-	
+		Log("Connecting to "+portName+"..."+NEWLINE);
+
 		// open the port
-		serialPort = new SerialPort(portName);
 		try {
+			serialPort = new SerialPort(portName);
             serialPort.openPort();// Open serial port
-            serialPort.setParams(Integer.parseInt(GetLastBaud()),SerialPort.DATABITS_8,SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
+            int baud = Integer.parseInt(GetLastBaud());
+            serialPort.setParams(baud,SerialPort.DATABITS_8,SerialPort.STOPBITS_1,SerialPort.PARITY_NONE);
             serialPort.addEventListener(this);
         } catch (SerialPortException e) {
 			Log("<span style='color:red'>Port could not be configured:"+e.getMessage()+"</span>\n");
@@ -248,6 +307,7 @@ implements SerialPortEventListener, ActionListener {
 		}
 		portOpened=true;
 		SetLastPort(portName);
+		Log("Connected.");
 
 		return 0;
 	}
@@ -275,13 +335,6 @@ implements SerialPortEventListener, ActionListener {
     // Adds a listener that should be notified.
     public void addListener(SerialConnectionReadyListener listener) {
       listeners.add(listener);
-    }
-
-    // Notifies all the listeners
-    private void notifyListeners() {
-      for (SerialConnectionReadyListener listener : listeners) {
-        listener.SerialConnectionReady(this);
-      }
     }
 
 	public JMenu getBaudMenu() {
@@ -332,4 +385,9 @@ implements SerialPortEventListener, ActionListener {
 	    
 	    return logPane;
 	}
+	
+	public boolean isPortOpened() {
+		return portOpened;
+	}
+
 }

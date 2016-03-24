@@ -1,4 +1,4 @@
-package GcodeSender.Generators;
+package com.marginallyclever.gcodesender.Generators;
 
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -21,7 +21,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-import GcodeSender.GcodeSender;
+import com.marginallyclever.gcodesender.GcodeSender;
 
 public class YourMessageHereGenerator implements GcodeGenerator {
 	// machine properties
@@ -92,7 +92,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 					lastMessage=text.getText();
 					TextCreateMessageNow(lastMessage);
 					// open the file automatically to save a click.
-					GcodeSender.getSingleton().OpenFile(outputFile);
+					GcodeSender.getSingleton().openFile(outputFile);
 					
 					driver.dispose();
 				}
@@ -274,7 +274,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 				case '}':  name="B3CLOSE";  break;
 				case '~':  name="TILDE";  break;
 				case '\\':  name="BSLASH";  break;
-				case 'É':  name="SPACE";  break;
+				case 'ï¿½':  name="SPACE";  break;
 				default: name=Character.toString(letter);  break;
 				}
 			}
@@ -325,6 +325,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		        		output.write(";\n");
 		        	}
 		        }
+		        in.close();
 			} else {
 				// file not found
 				System.out.print(fn);

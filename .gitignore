@@ -5,3 +5,6 @@ TEMP.NGC
 
 *.class
 *.class
+/target/
+
+*.class

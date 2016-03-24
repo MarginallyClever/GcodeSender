@@ -1,4 +1,4 @@
-package GcodeSender.Generators;
+package com.marginallyclever.gcodesender.Generators;
 
 public interface GcodeGenerator {
 	public String GetMenuName();

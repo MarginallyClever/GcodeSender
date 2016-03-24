@@ -1,4 +1,4 @@
-package GcodeSender.Generators;
+package com.marginallyclever.gcodesender.Generators;
 
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
@@ -13,7 +13,7 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 
-import GcodeSender.GcodeSender;
+import com.marginallyclever.gcodesender.GcodeSender;
 
 
 // source http://introcs.cs.princeton.edu/java/32class/Hilbert.java.html
@@ -135,7 +135,7 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 	        output.close();
 	        
 			// open the file automatically to save a click.
-			GcodeSender.getSingleton().OpenFile(outputFile);
+			GcodeSender.getSingleton().openFile(outputFile);
 		}
 		catch(IOException ex) {}
 	}

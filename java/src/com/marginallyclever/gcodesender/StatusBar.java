@@ -1,4 +1,4 @@
-package GcodeSender;
+package com.marginallyclever.gcodesender;
 
 import java.awt.Dimension;
 
