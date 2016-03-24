@@ -163,7 +163,8 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
     public void keyReleased(KeyEvent e) {
 		if(e.getKeyCode() == KeyEvent.VK_ENTER) {
 			if(arduino.isPortOpened() && !running) {
-				arduino.SendCommand(commandLineText.getText());
+				String msg = commandLineText.getText();
+				sendLineToRobot(msg);
 				commandLineText.setText("");
 			}
 		}
@@ -215,7 +216,8 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 
 		if(subject==commandLineSend) {
 			if(arduino.isPortOpened() && !running) {
-				arduino.SendCommand(commandLineText.getText());
+				String msg = commandLineText.getText();
+				sendLineToRobot(msg);
 				commandLineText.setText("");
 			}
 		}
