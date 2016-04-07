@@ -18,17 +18,17 @@ import com.marginallyclever.gcodesender.GcodeSender;
 
 // source http://introcs.cs.princeton.edu/java/32class/Hilbert.java.html
 public class HilbertCurveGenerator implements GcodeGenerator {
-	float turtle_x,turtle_y;
-	float turtle_dx,turtle_dy;
-	float turtle_step=10.0f;
-	float xmax = 7;
-	float xmin = -7;
-	float ymax = 7;
-	float ymin = -7;
-	float tool_offset_z = 1.25f;
-	float z_down=40;
-	float z_up=90;
-	int order=4; // controls complexity of curve
+	private float turtle_x,turtle_y;
+	private float turtle_dx,turtle_dy;
+	private float turtle_step=10.0f;
+	private float xmax = 7;
+	private float xmin = -7;
+	private float ymax = 7;
+	private float ymin = -7;
+	private float tool_offset_z = 1.25f;
+	private float z_down=40;
+	private float z_up=90;
+	private int order=4; // controls complexity of curve
 
 	
 	public String GetMenuName() {
