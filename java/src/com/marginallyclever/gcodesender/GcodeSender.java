@@ -52,9 +52,10 @@ extends JPanel
 implements ActionListener, KeyListener, SerialConnectionReadyListener
 {
 	private static final long serialVersionUID=1;
+	private static final String RECENT_FILES = "recent-files-";
 
 	private static String VERSION="1.1.0";
-	static protected GcodeSender singleton=null;
+	protected static GcodeSender singleton;
 	
 	// command line
 	private JPanel textInputArea;
@@ -64,16 +65,22 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	// menus
 	static private JFrame mainframe;
 	private JMenuBar menuBar;
-	private JMenuItem buttonOpenFile, buttonExit;
+	private JMenuItem buttonOpenFile;
+	private JMenuItem buttonExit;
     private JMenuItem [] buttonRecent = new JMenuItem[10];
-	private JMenuItem buttonRescan, buttonDisconnect;
-	private JMenuItem buttonStart, buttonPause, buttonHalt;
-	private JMenuItem buttonAbout,buttonCheckForUpdate;
+	private JMenuItem buttonRescan;
+	private JMenuItem buttonDisconnect;
+	private JMenuItem buttonStart;
+	private JMenuItem buttonPause;
+	private JMenuItem buttonHalt;
+	private JMenuItem buttonAbout;
+	private JMenuItem buttonCheckForUpdate;
 	private StatusBar statusBar;
 	
 	// serial connections
 	private SerialConnection arduino;
-	private boolean aReady=false, wasConfirmed=false;
+	private boolean aReady;
+	private boolean wasConfirmed;
 
 	// settings
 	private Preferences prefs;
@@ -82,13 +89,13 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	public double [] len = new double[6];
 	
 	// files
-	private boolean running=false;
+	private boolean running;
 	private boolean paused=true;
-	private boolean oneAtATime=false;
-	private boolean loopForever=false;
-    private long linesTotal=0;
-	private long linesProcessed=0;
-	private boolean fileOpened=false;
+	private boolean oneAtATime;
+	private boolean loopForever;
+    private long linesTotal;
+	private long linesProcessed;
+	private boolean fileOpened;
 	private ArrayList<String> gcode;
 	
 	// Generators
@@ -348,7 +355,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	}
 
 	
-	protected boolean inSendNow=false;
+	protected boolean inSendNow;
 	/**
 	 * Take the next line from the file and send it to the robot, if permitted. 
 	 */
@@ -497,7 +504,8 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		
 		newFiles[0]=filename;
 		
-		int i,j=1;
+		int i;
+		int j=1;
 		for(i=0;i<cnt;++i) {
 			if(!filename.equals(recentFiles[i]) && recentFiles[i] != "") {
 				newFiles[j++] = recentFiles[i];
@@ -511,7 +519,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		for(i=0;i<cnt;++i) {
 			if( recentFiles[i]==null ) recentFiles[i] = new String("");
 			if( recentFiles[i].isEmpty()==false ) {
-				prefs.put("recent-files-"+i, recentFiles[i]);
+				prefs.put(RECENT_FILES+i, recentFiles[i]);
 			}
 		}
 		
@@ -534,7 +542,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		// update prefs
 		for(i=0;i<recentFiles.length;++i) {
 			if(!recentFiles[i].isEmpty()) {
-				prefs.put("recent-files-"+i, recentFiles[i]);
+				prefs.put(RECENT_FILES+i, recentFiles[i]);
 			}
 		}
 		
@@ -545,7 +553,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	public void getRecentFiles() {
 		int i;
 		for(i=0;i<recentFiles.length;++i) {
-			recentFiles[i] = prefs.get("recent-files-"+i, recentFiles[i]);
+			recentFiles[i] = prefs.get(RECENT_FILES+i, recentFiles[i]);
 		}
 	}
 	

@@ -24,6 +24,9 @@ import javax.swing.JTextField;
 import com.marginallyclever.gcodesender.GcodeSender;
 
 public class YourMessageHereGenerator implements GcodeGenerator {
+	private static final String G90 = "G90;\n";
+	private static final String G91 = "G91;\n";
+
 	// machine properties
 	protected float feed_rate=1800.0f;
 	protected float feed_rate_rapid=8000.0f;
@@ -47,8 +50,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 	public enum Align { LEFT, CENTER, RIGHT };
 	protected VAlign align_vertical = VAlign.MIDDLE;
 	protected Align  align_horizontal = Align.CENTER;
-	protected float posx=0;
-	protected float posy=0;
+	protected float posx;
+	protected float posy;
 	
 	// debugging
 	protected boolean draw_bounding_box = true;
@@ -112,7 +115,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 	
 	protected String [] SplitForLength(String src) {
 		String [] test_lines = src.split(";\n");
-		int i,j;
+		int i;
+		int j;
 		
 		int num_lines = 0;
 		for(i=0;i<test_lines.length;++i) {
@@ -155,7 +159,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		try {
 			OutputStreamWriter output = new OutputStreamWriter(new FileOutputStream(outputFile),"UTF-8");
 			output.write("G28;\n");
-			output.write("G90;\n");
+			output.write(G90);
 			output.write("G54 Y-26;\n");
 			output.write("G0 A1;\n");
 			output.write("G0 X20 F"+feed_rate_rapid+";\n");
@@ -164,7 +168,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 
 			TextCreateMessageNow(text,output);
 
-			output.write(("G90;\n"));
+			output.write((G90));
 			output.write(("G0 Z15 F"+feed_rate_rapid+";\n"));
 			
         	output.flush();
@@ -181,7 +185,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		// TODO count newlines
 		Rectangle2D r = TextCalculateBounds(text);
 
-		output.write("G90;\n");
+		output.write(G90);
 		liftPen(output);
 		
 		if(draw_bounding_box) {
@@ -202,7 +206,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		float interline = -SY(letter_height + line_spacing); 
 
 		output.write("G0 X"+message_start+" Y"+firstline+";\n");
-		output.write("G91;\n");
+		output.write(G91);
 
 		// draw line of text
 		String [] lines = TextWrapToLength(text);
@@ -211,15 +215,15 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 				// newline
 				output.write("G0 Y"+interline+";\n");
 				// carriage return
-				output.write("G90;\n");
+				output.write(G90);
 				output.write("G0 X"+message_start+";\n");
-				output.write("G91;\n");
+				output.write(G91);
 			}
 			
 			TextDrawLine(lines[i],output);
 		}
 
-		output.write("G90;\n");
+		output.write(G90);
 		liftPen(output);
 	}
 	
@@ -295,13 +299,13 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		        while ( (b = in.readLine()) != null ) {
 		        	if(b.trim().length()==0) continue;
 		        	if(b.equals("UP")) {
-		         		output.write("G90;\n");
+		         		output.write(G90);
 		        		liftPen(output);
-		         		output.write("G91;\n");
+		         		output.write(G91);
 		        	} else if(b.equals("DOWN")) { 
-		         		output.write("G90;\n");
+		         		output.write(G90);
 						lowerPen(output);
-		         		output.write("G91;\n");
+		         		output.write(G91);
 		        	} else {
 		        		StringTokenizer st = new StringTokenizer(b);
 		        		String gap="";
@@ -389,7 +393,10 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		int num_lines = lines.length;
 		float h = padding*2 + ( letter_height + line_spacing ) * num_lines;//- line_spacing; removed because of letters that hang below the line
 		float w = padding*2 + ( letter_width + kerning ) * len - kerning;
-		float xmax=0, xmin=0, ymax=0, ymin=0;
+		float xmax=0;
+		float xmin=0;
+		float ymax=0;
+		float ymin=0;
 		
 		switch(align_horizontal) {
 		case LEFT:

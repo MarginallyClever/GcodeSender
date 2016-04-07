@@ -18,8 +18,11 @@ import com.marginallyclever.gcodesender.GcodeSender;
 
 // source http://introcs.cs.princeton.edu/java/32class/Hilbert.java.html
 public class HilbertCurveGenerator implements GcodeGenerator {
-	private float turtle_x,turtle_y;
-	private float turtle_dx,turtle_dy;
+	private static final String G90_NL = "G90\n";
+	private float turtle_x;
+	private float turtle_y;
+	private float turtle_dx;
+	private float turtle_dy;
 	private float turtle_step=10.0f;
 	private float xmax = 7;
 	private float xmin = -7;
@@ -94,7 +97,7 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 			System.out.println("output file = "+outputFile);
 			OutputStream output = new FileOutputStream(outputFile);
 			output.write(new String("G28\n").getBytes());
-			output.write(new String("G90\n").getBytes());
+			output.write(new String(G90_NL).getBytes());
 			output.write(new String("G54 X-30 Z-"+tool_offset_z+"\n").getBytes());
 			
 			turtle_x=0;
@@ -104,7 +107,7 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 			turtle_step = (float)((xmax-xmin) / (Math.pow(2, order)));
 
 			// Draw bounding box
-			output.write(new String("G90\n").getBytes());
+			output.write(new String(G90_NL).getBytes());
 			output.write(new String("G0 Z"+z_up+"\n").getBytes());
 			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
 			output.write(new String("G0 Z"+z_down+"\n").getBytes());
@@ -119,13 +122,13 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 			output.write(new String("G0 X"+(-turtle_step/2)+" Y"+(-turtle_step/2)+"\n").getBytes());
 						
 			// do the curve
-			output.write(new String("G90\n").getBytes());
+			output.write(new String(G90_NL).getBytes());
 			output.write(new String("G0 Z"+z_down+"\n").getBytes());
 			
 			output.write(new String("G91\n").getBytes());
 			hilbert(output,order);
 			
-			output.write(new String("G90\n").getBytes());
+			output.write(new String(G90_NL).getBytes());
 			output.write(new String("G0 Z"+z_up+"\n").getBytes());
 
 			// finish up
