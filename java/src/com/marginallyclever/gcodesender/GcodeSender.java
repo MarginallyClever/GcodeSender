@@ -51,15 +51,15 @@ public class GcodeSender
 extends JPanel
 implements ActionListener, KeyListener, SerialConnectionReadyListener
 {
-	static final long serialVersionUID=1;
-	
-	static String VERSION="1.1.0";
+	private static final long serialVersionUID=1;
+
+	private static String VERSION="1.1.0";
 	static protected GcodeSender singleton=null;
 	
 	// command line
-	JPanel textInputArea;
-	JTextField commandLineText;
-	JButton commandLineSend;
+	private JPanel textInputArea;
+	private JTextField commandLineText;
+	private JButton commandLineSend;
 	
 	// menus
 	static private JFrame mainframe;
@@ -92,8 +92,8 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	private ArrayList<String> gcode;
 	
 	// Generators
-	GcodeGenerator [] generators;
-	JMenuItem generatorButtons[];
+	private GcodeGenerator [] generators;
+	private JMenuItem generatorButtons[];
 
 	
 	public JFrame GetMainFrame() {

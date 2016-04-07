@@ -37,7 +37,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 	protected float letter_height=2.0f;
 	protected float line_spacing=0.50f;
 	protected float padding=0.20f;
-	static final String alphabetFolder = System.getProperty("user.dir") + "/" + "ALPHABET/";
+	private static final String alphabetFolder = System.getProperty("user.dir") + "/" + "ALPHABET/";
 	protected String outputFile = System.getProperty("user.dir") + "/" + "TEMP.NGC";
 	protected int chars_per_line=35;
 	protected String lastMessage = "";

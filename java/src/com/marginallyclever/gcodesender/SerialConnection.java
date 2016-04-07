@@ -21,12 +21,12 @@ import com.marginallyclever.gcodesender.SerialConnectionReadyListener;
 
 public class SerialConnection
 implements SerialPortEventListener, ActionListener {
-	static final String CUE = "> ";
-	static final String NOCHECKSUM = "NOCHECKSUM ";
-	static final String BADCHECKSUM = "BADCHECKSUM ";
-	static final String BADLINENUM = "BADLINENUM ";
-	static final String NEWLINE = "\n";
-	static final String COMMENT_START = ";";
+	private static final String CUE = "> ";
+	private static final String NOCHECKSUM = "NOCHECKSUM ";
+	private static final String BADCHECKSUM = "BADCHECKSUM ";
+	private static final String BADLINENUM = "BADLINENUM ";
+	private static final String NEWLINE = "\n";
+	private static final String COMMENT_START = ";";
 
 	
 	private String[] portsDetected;
@@ -44,14 +44,14 @@ implements SerialPortEventListener, ActionListener {
 	private Preferences prefs;
 	
 	// menus & GUIs
-	JTextArea log = new JTextArea();
-	JScrollPane logPane;
+	private JTextArea log = new JTextArea();
+	private JScrollPane logPane;
     private JMenuItem [] buttonPorts;
     private JMenuItem [] buttonBauds;
     
     // communications
-    String inputBuffer;
-    ArrayList<String> commandQueue = new ArrayList<String>();
+	private String inputBuffer;
+	private ArrayList<String> commandQueue = new ArrayList<String>();
 
     // Listeners which should be notified of a change to the percentage.
     private ArrayList<SerialConnectionReadyListener> listeners = new ArrayList<SerialConnectionReadyListener>();
