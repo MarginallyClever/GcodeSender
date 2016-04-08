@@ -22,6 +22,7 @@ import com.marginallyclever.gcodesender.SerialConnectionReadyListener;
 public class SerialConnection
 implements SerialPortEventListener, ActionListener {
 	private static final String CUE = "> ";
+	private static final String LAST_PORT = "last port";
 	private static final String NOCHECKSUM = "NOCHECKSUM ";
 	private static final String BADCHECKSUM = "BADCHECKSUM ";
 	private static final String BADLINENUM = "BADLINENUM ";
@@ -35,7 +36,7 @@ implements SerialPortEventListener, ActionListener {
 	private static String [] baudsAllowed = { "300","1200","2400","4800","9600","14400","19200","28800","38400","57600","115200","125000","250000"};
 	
 	public SerialPort serialPort;
-	public boolean portOpened=false;
+	public boolean portOpened;
 
 	public String portName;
 	public boolean waitingForCue=true;
@@ -71,11 +72,11 @@ implements SerialPortEventListener, ActionListener {
 	}
 	
 	private String GetLastPort(){
-		return prefs.get("last port","");
+		return prefs.get(LAST_PORT,"");
 	}
 	
 	private void SetLastPort(String portName) {
-		prefs.put("last port", portName);
+		prefs.put(LAST_PORT, portName);
 	}
 	
 	private String GetLastBaud() {
@@ -83,7 +84,7 @@ implements SerialPortEventListener, ActionListener {
 	}
 	
 	private void SetLastBaud(String baud) {
-		prefs.put("last port", baud);		
+		prefs.put(LAST_PORT, baud);		
 	}
 	
 	public void Log(String msg) {
@@ -93,7 +94,8 @@ implements SerialPortEventListener, ActionListener {
 	
 	@Override
 	public void serialEvent(SerialPortEvent events) {
-		String rawInput, oneLine;
+		String rawInput;
+		String oneLine;
 		int x;
 		
         if(events.isRXCHAR()) {
