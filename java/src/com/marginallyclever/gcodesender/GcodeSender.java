@@ -168,12 +168,10 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 
     /** Handle the key-released event from the text field. */
     public void keyReleased(KeyEvent e) {
-		if(e.getKeyCode() == KeyEvent.VK_ENTER) {
-			if(arduino.isPortOpened() && !running) {
-				String msg = commandLineText.getText();
-				sendLineToRobot(msg);
-				commandLineText.setText("");
-			}
+		if (e.getKeyCode() == KeyEvent.VK_ENTER && arduino.isPortOpened() && !running) {
+			String msg = commandLineText.getText();
+			sendLineToRobot(msg);
+			commandLineText.setText("");
 		}
 	}
     
@@ -203,30 +201,23 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
     }
     
     private void startSending() {
-		if(fileOpened) {
-	    	if(checkStartOptions()) {
-				paused=false;
-				running=true;
-				linesProcessed=0;
-				updateMenuBar();
-				//previewPane.setRunning(running);
-				//previewPane.setLinesProcessed(linesProcessed);
-				//statusBar.Start();
-				sendFileCommand();
-			}
-    	}
-    }
+		if (fileOpened && checkStartOptions()) {
+			paused = false;
+			running = true;
+			linesProcessed = 0;
+			updateMenuBar();
+			sendFileCommand();
+		}
+	}
 	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		Object subject = e.getSource();
 
-		if(subject==commandLineSend) {
-			if(arduino.isPortOpened() && !running) {
-				String msg = commandLineText.getText();
-				sendLineToRobot(msg);
-				commandLineText.setText("");
-			}
+		if (subject == commandLineSend && arduino.isPortOpened() && !running) {
+			String msg = commandLineText.getText();
+			sendLineToRobot(msg);
+			commandLineText.setText("");
 		}
 		if(subject==buttonExit) {
 			System.exit(0);  // @TODO: be more graceful?
@@ -322,7 +313,6 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 
 					System.out.println("last release: " + inputLine);
 					System.out.println("your VERSION: " + VERSION);
-					//System.out.println(inputLine.compareTo(VERSION));
 
 					if (inputLine.compareTo(VERSION) > 0) {
 						JOptionPane.showMessageDialog(null, "A new version of this software is available.  The latest version is "+inputLine+"\n"
@@ -349,8 +339,6 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		running=false;
 		paused=false;
 	    linesProcessed=0;
-	    //previewPane.setLinesProcessed(0);
-		//previewPane.setRunning(running);
 		updateMenuBar();
 	}
 
@@ -370,9 +358,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			line=gcode.get((int)linesProcessed++).trim();
 			
 			arduino.Log(">> "+line+"\n");
-			
-			//previewPane.setLinesProcessed(linesProcessed);
-			//statusBar.SetProgress(linesProcessed, linesTotal);
+
 			// loop until we find a line that gets sent to the robot, at which point we'll
 			// pause for the robot to respond.  Also stop at end of file.			
 			if( oneAtATime && line.length()>0 ) {
@@ -430,8 +416,6 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		// contains a comment?  if so remove it
 		int index=line.indexOf('(');
 		if(index!=-1) {
-			//String comment=line.substring(index+1,line.lastIndexOf(')'));
-			//Log("* "+comment+NL);
 			line=line.substring(0,index).trim();
 			if(line.length()==0) {
 				// entire line was a comment.
@@ -484,12 +468,10 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	    	removeRecentFile(filename);
 	    	return;
 	    }
-	    
-	    //previewPane.setGCode(gcode);
+
 	    fileOpened=true;
 	   	updateRecentFiles(filename);
 
-	   	//EstimateDrawTime();
 	    halt();
 	}
 	

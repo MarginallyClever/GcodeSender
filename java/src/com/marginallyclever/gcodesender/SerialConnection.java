@@ -68,7 +68,6 @@ implements SerialPortEventListener, ActionListener {
 	
 	public void finalize() {
 		ClosePort();
-		//super.finalize();
 	}
 	
 	private String GetLastPort(){
@@ -118,7 +117,6 @@ implements SerialPortEventListener, ActionListener {
 	                    	notifyLineError(error_line);
 	                    } else {
 	                    	// no error
-	                    	//if(oneLine.indexOf(CUE)!=0 || waitingForCue==false) 
 	                    	{
 	                    		notifyDataAvailable(oneLine);
 	                    	}
@@ -229,10 +227,8 @@ implements SerialPortEventListener, ActionListener {
 		String command;
 		try {
 			command=commandQueue.remove(0);
-			//if(command.endsWith(";")==false) command+=";";
 			if(command.endsWith("\n")==false) command+="\n";
 			
-			//Log(command+NL);
 			serialPort.writeBytes(command.getBytes());
 			waitingForCue=true;
 		}
@@ -251,10 +247,8 @@ implements SerialPortEventListener, ActionListener {
 	public void DetectSerialPorts() {
         if(System.getProperty("os.name").equals("Mac OS X")){
         	portsDetected = SerialPortList.getPortNames("/dev/");
-            //System.out.println("OS X");
         } else {
         	portsDetected = SerialPortList.getPortNames("COM");
-            //System.out.println("Windows");
         }
 	}
 	

@@ -19,18 +19,18 @@ import com.marginallyclever.gcodesender.GcodeSender;
 // source http://introcs.cs.princeton.edu/java/32class/Hilbert.java.html
 public class HilbertCurveGenerator implements GcodeGenerator {
 	private static final String G90_NL = "G90\n";
-	private float turtle_x;
-	private float turtle_y;
-	private float turtle_dx;
-	private float turtle_dy;
-	private float turtle_step=10.0f;
+	private float turtleX;
+	private float turtleY;
+	private float turtleDx;
+	private float turtleDy;
+	private float turtleStep =10.0f;
 	private float xmax = 7;
 	private float xmin = -7;
 	private float ymax = 7;
 	private float ymin = -7;
-	private float tool_offset_z = 1.25f;
-	private float z_down=40;
-	private float z_up=90;
+	private float toolOffsetZ = 1.25f;
+	private float zDown = 40;
+	private float zUp =90;
 	private int order=4; // controls complexity of curve
 
 	
@@ -45,8 +45,8 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 
 		final JTextField field_size = new JTextField(Integer.toString((int)xmax));
 		final JTextField field_order = new JTextField(Integer.toString(order));
-		final JTextField field_up = new JTextField(Integer.toString((int)z_up));
-		final JTextField field_down = new JTextField(Integer.toString((int)z_down));
+		final JTextField field_up = new JTextField(Integer.toString((int) zUp));
+		final JTextField field_down = new JTextField(Integer.toString((int) zDown));
 
 		driver.add(new JLabel("Size"));		driver.add(field_size);
 		driver.add(new JLabel("Order"));	driver.add(field_order);
@@ -66,8 +66,8 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 				Object subject = e.getSource();
 				
 				if(subject == buttonSave) {
-					z_up = Float.parseFloat(field_up.getText());
-					z_down = Float.parseFloat(field_down.getText());
+					zUp = Float.parseFloat(field_up.getText());
+					zDown = Float.parseFloat(field_down.getText());
 					xmax = Integer.parseInt(field_size.getText());
 					ymax= xmax;
 					xmin=-xmax;
@@ -98,38 +98,38 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 			OutputStream output = new FileOutputStream(outputFile);
 			output.write(new String("G28\n").getBytes());
 			output.write(new String(G90_NL).getBytes());
-			output.write(new String("G54 X-30 Z-"+tool_offset_z+"\n").getBytes());
+			output.write(new String("G54 X-30 Z-"+ toolOffsetZ +"\n").getBytes());
 			
-			turtle_x=0;
-			turtle_y=0;
-			turtle_dx=0;
-			turtle_dy=-1;
-			turtle_step = (float)((xmax-xmin) / (Math.pow(2, order)));
+			turtleX =0;
+			turtleY =0;
+			turtleDx =0;
+			turtleDy =-1;
+			turtleStep = (float)((xmax-xmin) / (Math.pow(2, order)));
 
 			// Draw bounding box
 			output.write(new String(G90_NL).getBytes());
-			output.write(new String("G0 Z"+z_up+"\n").getBytes());
+			output.write(new String("G0 Z"+ zUp +"\n").getBytes());
 			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
-			output.write(new String("G0 Z"+z_down+"\n").getBytes());
+			output.write(new String("G0 Z"+ zDown +"\n").getBytes());
 			output.write(new String("G0 X"+xmax+" Y"+ymin+"\n").getBytes());
 			output.write(new String("G0 X"+xmin+" Y"+ymin+"\n").getBytes());
 			output.write(new String("G0 X"+xmin+" Y"+ymax+"\n").getBytes());
 			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
-			output.write(new String("G0 Z"+z_up+"\n").getBytes());
+			output.write(new String("G0 Z"+ zUp +"\n").getBytes());
 
 			// move to starting position
 			output.write(new String("G91\n").getBytes());
-			output.write(new String("G0 X"+(-turtle_step/2)+" Y"+(-turtle_step/2)+"\n").getBytes());
+			output.write(new String("G0 X"+(-turtleStep /2)+" Y"+(-turtleStep /2)+"\n").getBytes());
 						
 			// do the curve
 			output.write(new String(G90_NL).getBytes());
-			output.write(new String("G0 Z"+z_down+"\n").getBytes());
+			output.write(new String("G0 Z"+ zDown +"\n").getBytes());
 			
 			output.write(new String("G91\n").getBytes());
 			hilbert(output,order);
 			
 			output.write(new String(G90_NL).getBytes());
-			output.write(new String("G0 Z"+z_up+"\n").getBytes());
+			output.write(new String("G0 Z"+ zUp +"\n").getBytes());
 
 			// finish up
 			output.write(new String("G28\n").getBytes());
@@ -180,19 +180,16 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 
     public void turtle_turn(float degrees) {
     	double n = degrees * Math.PI / 180.0;
-    	double newx =  Math.cos(n) * turtle_dx + Math.sin(n) * turtle_dy;
-    	double newy = -Math.sin(n) * turtle_dx + Math.cos(n) * turtle_dy;
+    	double newx =  Math.cos(n) * turtleDx + Math.sin(n) * turtleDy;
+    	double newy = -Math.sin(n) * turtleDx + Math.cos(n) * turtleDy;
     	double len = Math.sqrt(newx*newx + newy*newy);
     	assert(len>0);
-    	turtle_dx = (float)(newx/len);
-    	turtle_dy = (float)(newy/len);
+    	turtleDx = (float)(newx/len);
+    	turtleDy = (float)(newy/len);
     }
 
     
     public void turtle_goForward(OutputStream output) throws IOException {
-    	//turtle_x += turtle_dx * distance;
-    	//turtle_y += turtle_dy * distance;
-    	//output.write(new String("G0 X"+(turtle_x)+" Y"+(turtle_y)+"\n").getBytes());
-    	output.write(new String("G0 X"+(turtle_dx*turtle_step)+" Y"+(turtle_dy*turtle_step)+"\n").getBytes());
+    	output.write(new String("G0 X"+(turtleDx * turtleStep)+" Y"+(turtleDy * turtleStep)+"\n").getBytes());
     }
 }
