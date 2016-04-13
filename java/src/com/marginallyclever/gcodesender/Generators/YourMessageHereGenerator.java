@@ -28,33 +28,33 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 	private static final String G91 = "G91;\n";
 
 	// machine properties
-	protected float feed_rate=1800.0f;
-	protected float feed_rate_rapid=8000.0f;
-	protected float z_up=3.0f;
-	protected float z_down=1.8f;
+	protected float feedRate =1800.0f;
+	protected float feedRateRapid =8000.0f;
+	protected float zUp =3.0f;
+	protected float zDown =1.8f;
 	protected float scale=1.0f;
 	
 	// font properties
 	protected float kerning=0.20f;
-	protected float letter_width=1.0f;
-	protected float letter_height=2.0f;
-	protected float line_spacing=0.50f;
+	protected float letterWidth =1.0f;
+	protected float letterHeight =2.0f;
+	protected float lineSpacing =0.50f;
 	protected float padding=0.20f;
 	private static final String alphabetFolder = System.getProperty("user.dir") + "/" + "ALPHABET/";
 	protected String outputFile = System.getProperty("user.dir") + "/" + "TEMP.NGC";
-	protected int chars_per_line=35;
+	protected int charsPerLine =35;
 	protected String lastMessage = "";
 
 	// text position and alignment
 	public enum VAlign { TOP, MIDDLE, BOTTOM };
 	public enum Align { LEFT, CENTER, RIGHT };
-	protected VAlign align_vertical = VAlign.MIDDLE;
-	protected Align  align_horizontal = Align.CENTER;
+	protected VAlign alignVertical = VAlign.MIDDLE;
+	protected Align alignHorizontal = Align.CENTER;
 	protected float posx;
 	protected float posy;
 	
 	// debugging
-	protected boolean draw_bounding_box = true;
+	protected boolean drawBoundingBox = true;
 	
 	
 	
@@ -72,8 +72,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		driver.add(new JLabel("Message"));
 		driver.add(new JScrollPane(text));
 
-		final JTextField field_up = new JTextField(Float.toString(z_up));
-		final JTextField field_down = new JTextField(Float.toString(z_down));
+		final JTextField field_up = new JTextField(Float.toString(zUp));
+		final JTextField field_down = new JTextField(Float.toString(zDown));
 		driver.add(new JLabel("Up"));		driver.add(field_up);
 		driver.add(new JLabel("Down"));		driver.add(field_down);
 
@@ -90,8 +90,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 				Object subject = e.getSource();
 				
 				if(subject == buttonSave) {
-					z_up = Float.parseFloat(field_up.getText());
-					z_down = Float.parseFloat(field_down.getText());
+					zUp = Float.parseFloat(field_up.getText());
+					zDown = Float.parseFloat(field_down.getText());
 					lastMessage=text.getText();
 					TextCreateMessageNow(lastMessage);
 					// open the file automatically to save a click.
@@ -120,8 +120,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		
 		int num_lines = 0;
 		for(i=0;i<test_lines.length;++i) {
-			if( test_lines[i].length() > chars_per_line ) {
-				int x = (int)Math.ceil( (double)test_lines[i].length() / (double)chars_per_line );
+			if( test_lines[i].length() > charsPerLine) {
+				int x = (int)Math.ceil( (double)test_lines[i].length() / (double) charsPerLine);
 				num_lines += x;	
 			} else {
 				num_lines++;
@@ -131,11 +131,11 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		String [] lines = new String[num_lines];
 		j=0;
 		for(i=0;i<test_lines.length;++i) {
-			if(test_lines[i].length() < chars_per_line) {
+			if(test_lines[i].length() < charsPerLine) {
 				lines[j++] = test_lines[i];
 			}
-			if(test_lines[i].length()>chars_per_line) {
-				String [] temp = test_lines[i].split("(?<=\\G.{"+chars_per_line+"})");
+			if(test_lines[i].length()> charsPerLine) {
+				String [] temp = test_lines[i].split("(?<=\\G.{"+ charsPerLine +"})");
 				for(int k=0;k<temp.length;++k) {
 					lines[j++] = temp[k];
 				}
@@ -162,14 +162,14 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 			output.write(G90);
 			output.write("G54 Y-26;\n");
 			output.write("G0 A1;\n");
-			output.write("G0 X20 F"+feed_rate_rapid+";\n");
+			output.write("G0 X20 F"+ feedRateRapid +";\n");
 			output.write("G0 Y0;\n");
 			output.write("G0 X0;\n");
 
 			TextCreateMessageNow(text,output);
 
 			output.write((G90));
-			output.write(("G0 Z15 F"+feed_rate_rapid+";\n"));
+			output.write(("G0 Z15 F"+ feedRateRapid +";\n"));
 			
         	output.flush();
 	        output.close();
@@ -179,7 +179,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 	
 	
 	protected void TextCreateMessageNow(String text,OutputStreamWriter output) throws IOException {
-		if(chars_per_line<=0) return;
+		if(charsPerLine <=0) return;
 		
 		// find size of text block
 		// TODO count newlines
@@ -188,7 +188,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		output.write(G90);
 		liftPen(output);
 		
-		if(draw_bounding_box) {
+		if(drawBoundingBox) {
 			// draw bounding box
 			output.write("G0 X"+TX((float)r.getMinX())+" Y"+TY((float)r.getMaxY())+";\n");
 			lowerPen(output);
@@ -202,8 +202,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		// move to first line height
 		// assumes we are still G90
 		float message_start = TX((float)r.getMinX()) + SX(padding);
-		float firstline = TY((float)r.getMaxY()) - SY(padding + letter_height);
-		float interline = -SY(letter_height + line_spacing); 
+		float firstline = TY((float)r.getMaxY()) - SY(padding + letterHeight);
+		float interline = -SY(letterHeight + lineSpacing); 
 
 		output.write("G0 X"+message_start+" Y"+firstline+";\n");
 		output.write(G91);
@@ -229,8 +229,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 	
 	
  	protected void TextDrawLine(String a1,OutputStreamWriter output) throws IOException {
-		//System.out.println(a1+" ("+a1.length()+")");
-		
+
 		int i=0;
 		for(i=0;i<a1.length();++i) {
 			char letter = a1.charAt(i);
@@ -283,8 +282,6 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 				}
 			}
 			String fn = alphabetFolder + name  + ".NGC";
-			//System.out.print(fn);
-			
 			
 			if(new File(fn).isFile()) {
 				if(i>0 && kerning!=0) {
@@ -292,7 +289,6 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 				}
 				
 				// file found. copy/paste it into the temp file
-				//System.out.println(" OK");
 				BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(fn),"UTF-8"));
 
 				String b;
@@ -355,11 +351,11 @@ public class YourMessageHereGenerator implements GcodeGenerator {
  	}
  	
  	protected void liftPen(OutputStreamWriter output) throws IOException {
- 		output.write("G0 F"+feed_rate_rapid+" Z"+z_up+";\n");
+ 		output.write("G0 F"+ feedRateRapid +" Z"+ zUp +";\n");
  	}
  	
  	protected void lowerPen(OutputStreamWriter output) throws IOException {
-		output.write("G0 F"+feed_rate+" Z"+z_down+";\n");
+		output.write("G0 F"+ feedRate +" Z"+ zDown +";\n");
 	}
 
 	
@@ -369,21 +365,19 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 	}
 	
 	public void TextSetAlign(Align x) {
-		align_horizontal = x;
+		alignHorizontal = x;
 	}
 	
 	public void TextSetVAlign(VAlign x) {
-		align_vertical = x;
+		alignVertical = x;
 	}
 	
 	public void TextSetCharsPerLine(int numChars) {
-		chars_per_line = numChars;
-		//System.out.println("MAX="+numChars);
+		charsPerLine = numChars;
 	}
 	
 	public void TextFindCharsPerLine(float width) {
-		chars_per_line=(int)Math.floor( (float)(width - padding*2.0f) / (float)(letter_width+kerning) );
-		//System.out.println("MAX="+chars_per_line);
+		charsPerLine = (int)Math.floor( (float)(width - padding*2.0f) / (float)(letterWidth + kerning) );
 	}
 	
 	protected Rectangle2D TextCalculateBounds(String text) {
@@ -391,14 +385,14 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		int len = TextLongestLine(lines);
 		
 		int num_lines = lines.length;
-		float h = padding*2 + ( letter_height + line_spacing ) * num_lines;//- line_spacing; removed because of letters that hang below the line
-		float w = padding*2 + ( letter_width + kerning ) * len - kerning;
+		float h = padding*2 + ( letterHeight + lineSpacing) * num_lines;//- line_spacing; removed because of letters that hang below the line
+		float w = padding*2 + ( letterWidth + kerning ) * len - kerning;
 		float xmax=0;
 		float xmin=0;
 		float ymax=0;
 		float ymin=0;
 		
-		switch(align_horizontal) {
+		switch(alignHorizontal) {
 		case LEFT:
 			xmax=posx + w;
 			xmin=posx;
@@ -415,7 +409,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 			assert(false);
 		}
 		
-		switch(align_vertical) {
+		switch(alignVertical) {
 		case BOTTOM:
 			ymax=posy + h;
 			ymin=posy;
@@ -431,12 +425,6 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		default:
 			assert(false);
 		}
-		/*
-		System.out.println(num_lines + " lines");
-		System.out.println("longest "+len+" chars");
-		System.out.println("x "+xmin+" to "+xmax);
-		System.out.println("y "+ymin+" to "+ymax);
-		*/
 		Rectangle2D r = new Rectangle2D.Float();
 		r.setRect((double)xmin, (double)ymin, (double)(xmax - xmin), (double)(ymax - ymin));
 		
@@ -451,8 +439,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		
 		int num_lines = 0;
 		for(i=0;i<test_lines.length;++i) {
-			if( test_lines[i].length() > chars_per_line ) {
-				int x = (int)Math.ceil( (double)test_lines[i].length() / (double)chars_per_line );
+			if( test_lines[i].length() > charsPerLine) {
+				int x = (int)Math.ceil( (double)test_lines[i].length() / (double) charsPerLine);
 				num_lines += x;	
 			} else {
 				num_lines++;
@@ -462,11 +450,11 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		String [] lines = new String[num_lines];
 		j=0;
 		for(i=0;i<test_lines.length;++i) {
-			if(test_lines[i].length() < chars_per_line) {
+			if(test_lines[i].length() < charsPerLine) {
 				lines[j++] = test_lines[i];
 			}
-			if(test_lines[i].length()>chars_per_line) {
-				String [] temp = test_lines[i].split("(?<=\\G.{"+chars_per_line+"})");
+			if(test_lines[i].length()> charsPerLine) {
+				String [] temp = test_lines[i].split("(?<=\\G.{"+ charsPerLine +"})");
 				for(int k=0;k<temp.length;++k) {
 					lines[j++] = temp[k];
 				}
