@@ -246,7 +246,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		}
 		if( subject == buttonPause ) {
 			if(running) {
-				if(paused==true) {
+				if(paused) {
 					buttonPause.setText("Pause");
 					paused=false;
 					// @TODO: if the robot is not ready to unpause, this might fail and the program would appear to hang.
@@ -348,7 +348,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	 * Take the next line from the file and send it to the robot, if permitted. 
 	 */
 	public void sendFileCommand() {
-		if(inSendNow || running==false || paused==true || fileOpened==false || arduino.isPortOpened()==false || linesProcessed>=linesTotal) return;
+		if(inSendNow || !running || paused || !fileOpened || !arduino.isPortOpened() || linesProcessed>=linesTotal) return;
 		
 		inSendNow=true;
 		
@@ -438,7 +438,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	}
 	
 	private void closeFile() {
-		if(fileOpened==true) {
+		if(fileOpened) {
 			fileOpened=false;
 		}
 	}
@@ -500,7 +500,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		// update prefs
 		for(i=0;i<cnt;++i) {
 			if( recentFiles[i]==null ) recentFiles[i] = new String("");
-			if( recentFiles[i].isEmpty()==false ) {
+			if( !recentFiles[i].isEmpty() ) {
 				prefs.put(RECENT_FILES+i, recentFiles[i]);
 			}
 		}
