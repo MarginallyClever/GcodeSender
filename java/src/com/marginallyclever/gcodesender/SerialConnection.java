@@ -127,7 +127,7 @@ implements SerialPortEventListener, ActionListener {
 							waitingForCue=false;
 						}
 					}
-					if(waitingForCue==false) {
+					if(!waitingForCue) {
 						sendQueuedCommand();
 					}
 				}
@@ -206,14 +206,14 @@ implements SerialPortEventListener, ActionListener {
 	private String getNumberPortion(String src) {
 		src = src.trim();
 		int length = src.length();
-		String result = "";
+		StringBuilder result = new StringBuilder();
 		for (int i = 0; i < length; i++) {
 			Character character = src.charAt(i);
 			if (Character.isDigit(character)) {
-				result += character;
+				result.append(character);
 			}
 		}
-		return result;
+		return result.toString();
 	}
 	
 	protected void sendQueuedCommand() {
@@ -227,7 +227,7 @@ implements SerialPortEventListener, ActionListener {
 		String command;
 		try {
 			command=commandQueue.remove(0);
-			if(command.endsWith("\n")==false) command+="\n";
+			if(!command.endsWith("\n")) command+="\n";
 			
 			serialPort.writeBytes(command.getBytes());
 			waitingForCue=true;
@@ -284,7 +284,7 @@ implements SerialPortEventListener, ActionListener {
 	// open a serial connection to a device.  We won't know it's the robot until  
 	public int OpenPort(String portName) {
 		if(portOpened && portName.equals(GetLastPort())) return 0;
-		if(PortExists(portName) == false) return 0;
+		if(!PortExists(portName)) return 0;
 		
 		ClosePort();
 		

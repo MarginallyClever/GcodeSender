@@ -230,7 +230,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 	
  	protected void TextDrawLine(String a1,OutputStreamWriter output) throws IOException {
 
-		int i=0;
+		int i;
 		for(i=0;i<a1.length();++i) {
 			char letter = a1.charAt(i);
 			
