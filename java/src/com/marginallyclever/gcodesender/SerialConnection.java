@@ -42,20 +42,20 @@ implements SerialPortEventListener, ActionListener {
 	public boolean waitingForCue=true;
 	
 	// settings
-	private Preferences prefs;
+	private final Preferences prefs;
 	
 	// menus & GUIs
-	private JTextArea log = new JTextArea();
+	private final JTextArea log = new JTextArea();
 	private JScrollPane logPane;
     private JMenuItem [] buttonPorts;
     private JMenuItem [] buttonBauds;
     
     // communications
 	private String inputBuffer;
-	private ArrayList<String> commandQueue = new ArrayList<String>();
+	private final  ArrayList<String> commandQueue = new ArrayList<String>();
 
     // Listeners which should be notified of a change to the percentage.
-    private ArrayList<SerialConnectionReadyListener> listeners = new ArrayList<SerialConnectionReadyListener>();
+    private final ArrayList<SerialConnectionReadyListener> listeners = new ArrayList<SerialConnectionReadyListener>();
 
 	
 	public SerialConnection(String name) {
@@ -112,9 +112,9 @@ implements SerialPortEventListener, ActionListener {
 						inputBuffer = inputBuffer.substring(x);
 
 						// check for error
-						int error_line = errorReported(oneLine);
-	                    if(error_line != -1) {
-	                    	notifyLineError(error_line);
+						int errorLine = errorReported(oneLine);
+	                    if(errorLine != -1) {
+							notifyLineError(errorLine);
 	                    } else {
 	                    	// no error
 	                    	{
@@ -162,8 +162,8 @@ implements SerialPortEventListener, ActionListener {
 	 */
 	protected int errorReported(String line) {
 		if (line.lastIndexOf(NOCHECKSUM) != -1) {
-			String after_error = line.substring(line.lastIndexOf(NOCHECKSUM) + NOCHECKSUM.length());
-			String x = getNumberPortion(after_error);
+			String afterError = line.substring(line.lastIndexOf(NOCHECKSUM) + NOCHECKSUM.length());
+			String x = getNumberPortion(afterError);
 			int err = 0;
 			try {
 				err = Integer.decode(x);
@@ -173,8 +173,8 @@ implements SerialPortEventListener, ActionListener {
 			return err;
 		}
 		if (line.lastIndexOf(BADCHECKSUM) != -1) {
-			String after_error = line.substring(line.lastIndexOf(BADCHECKSUM) + BADCHECKSUM.length());
-			String x = getNumberPortion(after_error);
+			String afterError = line.substring(line.lastIndexOf(BADCHECKSUM) + BADCHECKSUM.length());
+			String x = getNumberPortion(afterError);
 			int err = 0;
 			try {
 				err = Integer.decode(x);
@@ -184,8 +184,8 @@ implements SerialPortEventListener, ActionListener {
 			return err;
 		}
 		if (line.lastIndexOf(BADLINENUM) != -1) {
-			String after_error = line.substring(line.lastIndexOf(BADLINENUM) + BADLINENUM.length());
-			String x = getNumberPortion(after_error);
+			String afterError = line.substring(line.lastIndexOf(BADLINENUM) + BADLINENUM.length());
+			String x = getNumberPortion(afterError);
 			int err = 0;
 			try {
 				err = Integer.decode(x);

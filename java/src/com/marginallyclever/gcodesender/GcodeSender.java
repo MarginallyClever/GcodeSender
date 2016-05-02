@@ -78,12 +78,12 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	private StatusBar statusBar;
 	
 	// serial connections
-	private SerialConnection arduino;
+	private final SerialConnection arduino;
 	private boolean aReady;
 	private boolean wasConfirmed;
 
 	// settings
-	private Preferences prefs;
+	private final Preferences prefs;
 	private String[] recentFiles = {"","","","","","","","","",""};
 	
 	public double [] len = new double[6];

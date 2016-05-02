@@ -72,10 +72,10 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		driver.add(new JLabel("Message"));
 		driver.add(new JScrollPane(text));
 
-		final JTextField field_up = new JTextField(Float.toString(zUp));
-		final JTextField field_down = new JTextField(Float.toString(zDown));
-		driver.add(new JLabel("Up"));		driver.add(field_up);
-		driver.add(new JLabel("Down"));		driver.add(field_down);
+		final JTextField fieldUp = new JTextField(Float.toString(zUp));
+		final JTextField fieldDown = new JTextField(Float.toString(zDown));
+		driver.add(new JLabel("Up"));		driver.add(fieldUp);
+		driver.add(new JLabel("Down"));		driver.add(fieldDown);
 
 		final JButton buttonSave = new JButton("Go");
 		final JButton buttonCancel = new JButton("Cancel");
@@ -90,8 +90,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 				Object subject = e.getSource();
 				
 				if(subject == buttonSave) {
-					zUp = Float.parseFloat(field_up.getText());
-					zDown = Float.parseFloat(field_down.getText());
+					zUp = Float.parseFloat(fieldUp.getText());
+					zDown = Float.parseFloat(fieldDown.getText());
 					lastMessage=text.getText();
 					TextCreateMessageNow(lastMessage);
 					// open the file automatically to save a click.
@@ -114,28 +114,28 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 
 	
 	protected String [] SplitForLength(String src) {
-		String [] test_lines = src.split(";\n");
+		String [] testLines = src.split(";\n");
 		int i;
 		int j;
 		
-		int num_lines = 0;
-		for(i=0;i<test_lines.length;++i) {
-			if( test_lines[i].length() > charsPerLine) {
-				int x = (int)Math.ceil( (double)test_lines[i].length() / (double) charsPerLine);
-				num_lines += x;	
+		int numLines = 0;
+		for(i=0;i<testLines.length;++i) {
+			if( testLines[i].length() > charsPerLine) {
+				int x = (int)Math.ceil( (double)testLines[i].length() / (double) charsPerLine);
+				numLines += x;
 			} else {
-				num_lines++;
+				numLines++;
 			}
 		}
 
-		String [] lines = new String[num_lines];
+		String [] lines = new String[numLines];
 		j=0;
-		for(i=0;i<test_lines.length;++i) {
-			if(test_lines[i].length() < charsPerLine) {
-				lines[j++] = test_lines[i];
+		for(i=0;i<testLines.length;++i) {
+			if(testLines[i].length() < charsPerLine) {
+				lines[j++] = testLines[i];
 			}
-			if(test_lines[i].length()> charsPerLine) {
-				String [] temp = test_lines[i].split("(?<=\\G.{"+ charsPerLine +"})");
+			if(testLines[i].length()> charsPerLine) {
+				String [] temp = testLines[i].split("(?<=\\G.{"+ charsPerLine +"})");
 				for(int k=0;k<temp.length;++k) {
 					lines[j++] = temp[k];
 				}
@@ -201,11 +201,11 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		
 		// move to first line height
 		// assumes we are still G90
-		float message_start = TX((float)r.getMinX()) + SX(padding);
+		float messageStart = TX((float)r.getMinX()) + SX(padding);
 		float firstline = TY((float)r.getMaxY()) - SY(padding + letterHeight);
 		float interline = -SY(letterHeight + lineSpacing); 
 
-		output.write("G0 X"+message_start+" Y"+firstline+";\n");
+		output.write("G0 X"+messageStart+" Y"+firstline+";\n");
 		output.write(G91);
 
 		// draw line of text
@@ -216,7 +216,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 				output.write("G0 Y"+interline+";\n");
 				// carriage return
 				output.write(G90);
-				output.write("G0 X"+message_start+";\n");
+				output.write("G0 X"+messageStart+";\n");
 				output.write(G91);
 			}
 			
@@ -384,8 +384,8 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		String [] lines = TextWrapToLength(text);
 		int len = TextLongestLine(lines);
 		
-		int num_lines = lines.length;
-		float h = padding*2 + ( letterHeight + lineSpacing) * num_lines;//- line_spacing; removed because of letters that hang below the line
+		int numLines = lines.length;
+		float h = padding*2 + ( letterHeight + lineSpacing) * numLines;//- line_spacing; removed because of letters that hang below the line
 		float w = padding*2 + ( letterWidth + kerning ) * len - kerning;
 		float xmax=0;
 		float xmin=0;
@@ -434,27 +434,27 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 	
 
 	protected String [] TextWrapToLength(String src) {
-		String [] test_lines = src.split("\n");
+		String [] testLines = src.split("\n");
 		int i,j;
 		
-		int num_lines = 0;
-		for(i=0;i<test_lines.length;++i) {
-			if( test_lines[i].length() > charsPerLine) {
-				int x = (int)Math.ceil( (double)test_lines[i].length() / (double) charsPerLine);
-				num_lines += x;	
+		int numLines = 0;
+		for(i=0;i<testLines.length;++i) {
+			if( testLines[i].length() > charsPerLine) {
+				int x = (int)Math.ceil( (double)testLines[i].length() / (double) charsPerLine);
+				numLines += x;
 			} else {
-				num_lines++;
+				numLines++;
 			}
 		}
 
-		String [] lines = new String[num_lines];
+		String [] lines = new String[numLines];
 		j=0;
-		for(i=0;i<test_lines.length;++i) {
-			if(test_lines[i].length() < charsPerLine) {
-				lines[j++] = test_lines[i];
+		for(i=0;i<testLines.length;++i) {
+			if(testLines[i].length() < charsPerLine) {
+				lines[j++] = testLines[i];
 			}
-			if(test_lines[i].length()> charsPerLine) {
-				String [] temp = test_lines[i].split("(?<=\\G.{"+ charsPerLine +"})");
+			if(testLines[i].length()> charsPerLine) {
+				String [] temp = testLines[i].split("(?<=\\G.{"+ charsPerLine +"})");
 				for(int k=0;k<temp.length;++k) {
 					lines[j++] = temp[k];
 				}

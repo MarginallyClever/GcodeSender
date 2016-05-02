@@ -28,7 +28,7 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 	private float xmin = -7;
 	private float ymax = 7;
 	private float ymin = -7;
-	private float toolOffsetZ = 1.25f;
+	private final float toolOffsetZ = 1.25f;
 	private float zDown = 40;
 	private float zUp =90;
 	private int order=4; // controls complexity of curve
@@ -43,15 +43,15 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 		final JDialog driver = new JDialog(GcodeSender.getSingleton().GetMainFrame(),"Your Message Here",true);
 		driver.setLayout(new GridLayout(0,1));
 
-		final JTextField field_size = new JTextField(Integer.toString((int)xmax));
-		final JTextField field_order = new JTextField(Integer.toString(order));
-		final JTextField field_up = new JTextField(Integer.toString((int) zUp));
-		final JTextField field_down = new JTextField(Integer.toString((int) zDown));
+		final JTextField fieldSize = new JTextField(Integer.toString((int)xmax));
+		final JTextField fieldOrder = new JTextField(Integer.toString(order));
+		final JTextField fieldUp = new JTextField(Integer.toString((int) zUp));
+		final JTextField fieldDown = new JTextField(Integer.toString((int) zDown));
 
-		driver.add(new JLabel("Size"));		driver.add(field_size);
-		driver.add(new JLabel("Order"));	driver.add(field_order);
-		driver.add(new JLabel("Up"));		driver.add(field_up);
-		driver.add(new JLabel("Down"));		driver.add(field_down);
+		driver.add(new JLabel("Size"));		driver.add(fieldSize);
+		driver.add(new JLabel("Order"));	driver.add(fieldOrder);
+		driver.add(new JLabel("Up"));		driver.add(fieldUp);
+		driver.add(new JLabel("Down"));		driver.add(fieldDown);
 
 		final JButton buttonSave = new JButton("Go");
 		final JButton buttonCancel = new JButton("Cancel");
@@ -66,13 +66,13 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 				Object subject = e.getSource();
 				
 				if(subject == buttonSave) {
-					zUp = Float.parseFloat(field_up.getText());
-					zDown = Float.parseFloat(field_down.getText());
-					xmax = Integer.parseInt(field_size.getText());
+					zUp = Float.parseFloat(fieldUp.getText());
+					zDown = Float.parseFloat(fieldDown.getText());
+					xmax = Integer.parseInt(fieldSize.getText());
 					ymax= xmax;
 					xmin=-xmax;
 					ymin=-xmax;
-					order = Integer.parseInt(field_order.getText());
+					order = Integer.parseInt(fieldOrder.getText());
 					CreateCurveNow();
 					
 					driver.dispose();
