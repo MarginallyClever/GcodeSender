@@ -243,13 +243,23 @@ implements SerialPortEventListener, ActionListener {
 		sendQueuedCommand();
 	}
 	
-	// find all available serial ports for the settings->ports menu.
+	// Find all available serial ports for the settings->ports menu.
 	public void DetectSerialPorts() {
-        if(System.getProperty("os.name").equals("Mac OS X")){
-        	portsDetected = SerialPortList.getPortNames("/dev/");
-        } else {
-        	portsDetected = SerialPortList.getPortNames("COM");
-        }
+	    String OS = System.getProperty("os.name").toLowerCase();
+
+	    if (OS.indexOf("mac") >= 0) {
+	      portsDetected = SerialPortList.getPortNames("/dev/");
+	      //System.out.println("OS X");
+	    } else if (OS.indexOf("win") >= 0) {
+	      portsDetected = SerialPortList.getPortNames("COM");
+	      //System.out.println("Windows");
+	    } else if (OS.indexOf("nix") >= 0 || OS.indexOf("nux") >= 0 || OS.indexOf("aix") > 0) {
+	      portsDetected = SerialPortList.getPortNames("/dev/");
+	      //System.out.println("Linux/Unix");
+	    } else {
+	      System.out.println("OS ERROR");
+	      System.out.println("OS NAME=" + System.getProperty("os.name"));
+	    }
 	}
 	
 	public boolean PortExists(String portName) {
