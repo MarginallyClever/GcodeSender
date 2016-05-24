@@ -355,7 +355,8 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		String line;
 		do {
 			// are there any more commands?
-			line=gcode.get((int)linesProcessed++).trim();
+			line=gcode.get((int)linesProcessed).trim();
+			linesProcessed++;
 			
 			arduino.Log(">> "+line+"\n");
 
@@ -490,7 +491,8 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		int j=1;
 		for(i=0;i<cnt;++i) {
 			if(!filename.equals(recentFiles[i]) && recentFiles[i] != "") {
-				newFiles[j++] = recentFiles[i];
+				newFiles[j] = recentFiles[i];
+				j++;
 				if(j == cnt ) break;
 			}
 		}

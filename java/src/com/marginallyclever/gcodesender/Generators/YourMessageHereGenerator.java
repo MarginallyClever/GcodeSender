@@ -132,12 +132,14 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		j=0;
 		for(i=0;i<testLines.length;++i) {
 			if(testLines[i].length() < charsPerLine) {
-				lines[j++] = testLines[i];
+				lines[j] = testLines[i];
+				j++;
 			}
 			if(testLines[i].length()> charsPerLine) {
 				String [] temp = testLines[i].split("(?<=\\G.{"+ charsPerLine +"})");
 				for(int k=0;k<temp.length;++k) {
-					lines[j++] = temp[k];
+					lines[j] = temp[k];
+					j++;
 				}
 			}
 		}
@@ -451,12 +453,14 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		j=0;
 		for(i=0;i<testLines.length;++i) {
 			if(testLines[i].length() < charsPerLine) {
-				lines[j++] = testLines[i];
+				lines[j] = testLines[i];
+				j++;
 			}
 			if(testLines[i].length()> charsPerLine) {
 				String [] temp = testLines[i].split("(?<=\\G.{"+ charsPerLine +"})");
 				for(int k=0;k<temp.length;++k) {
-					lines[j++] = temp[k];
+					lines[j] = temp[k];
+					j++;
 				}
 			}
 		}
