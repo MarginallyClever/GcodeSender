@@ -7,6 +7,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.prefs.Preferences;
 
@@ -103,7 +104,7 @@ implements SerialPortEventListener, ActionListener {
             	int len = events.getEventValue();
 				byte [] buffer = serialPort.readBytes(len);
 				if( len>0 ) {
-					rawInput = new String(buffer,0,len);
+					rawInput = new String(buffer,0,len, StandardCharsets.UTF_8);
 					inputBuffer+=rawInput;
 					// each line ends with a \n.
 					for( x=inputBuffer.indexOf("\n"); x!=-1; x=inputBuffer.indexOf("\n") ) {
@@ -229,7 +230,7 @@ implements SerialPortEventListener, ActionListener {
 			command=commandQueue.remove(0);
 			if(!command.endsWith("\n")) command+="\n";
 			
-			serialPort.writeBytes(command.getBytes());
+			serialPort.writeBytes(command.getBytes(StandardCharsets.UTF_8));
 			waitingForCue=true;
 		}
 		catch(IndexOutOfBoundsException e1) {}
