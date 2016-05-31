@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -297,7 +298,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			HttpURLConnection conn = (HttpURLConnection) github.openConnection();
 			conn.setInstanceFollowRedirects(false);  //you still need to handle redirect manully.
 			HttpURLConnection.setFollowRedirects(false);
-			BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+			BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
 
 			String inputLine;
 			if ((inputLine = in.readLine()) != null) {
@@ -452,7 +453,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		closeFile();
 
 	    try {
-	    	Scanner scanner = new Scanner(new FileInputStream(filename));
+			Scanner scanner = new Scanner(new FileInputStream(filename), "UTF-8");
 	    	linesTotal=0;
 	    	gcode = new ArrayList<String>();
 		    try {
@@ -501,7 +502,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 
 		// update prefs
 		for(i=0;i<cnt;++i) {
-			if( recentFiles[i]==null ) recentFiles[i] = new String("");
+			if( recentFiles[i]==null ) recentFiles[i] = "";
 			if( !recentFiles[i].isEmpty() ) {
 				prefs.put(RECENT_FILES+i, recentFiles[i]);
 			}

@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 import javax.swing.Box;
 import javax.swing.JButton;
@@ -96,9 +97,9 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 			String outputFile = System.getProperty("user.dir") + "/" + "TEMP.NGC";
 			System.out.println("output file = "+outputFile);
 			OutputStream output = new FileOutputStream(outputFile);
-			output.write(new String("G28\n").getBytes());
-			output.write(new String(G90_NL).getBytes());
-			output.write(new String("G54 X-30 Z-"+ toolOffsetZ +"\n").getBytes());
+			output.write("G28\n".getBytes(StandardCharsets.UTF_8));
+			output.write(G90_NL.getBytes(StandardCharsets.UTF_8));
+			output.write(("G54 X-30 Z-"+ toolOffsetZ +"\n").getBytes(StandardCharsets.UTF_8));
 			
 			turtleX =0;
 			turtleY =0;
@@ -107,32 +108,32 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 			turtleStep = (float)((xmax-xmin) / (Math.pow(2, order)));
 
 			// Draw bounding box
-			output.write(new String(G90_NL).getBytes());
-			output.write(new String("G0 Z"+ zUp +"\n").getBytes());
-			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
-			output.write(new String("G0 Z"+ zDown +"\n").getBytes());
-			output.write(new String("G0 X"+xmax+" Y"+ymin+"\n").getBytes());
-			output.write(new String("G0 X"+xmin+" Y"+ymin+"\n").getBytes());
-			output.write(new String("G0 X"+xmin+" Y"+ymax+"\n").getBytes());
-			output.write(new String("G0 X"+xmax+" Y"+ymax+"\n").getBytes());
-			output.write(new String("G0 Z"+ zUp +"\n").getBytes());
+			output.write(G90_NL.getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 Z"+ zUp +"\n").getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 X"+xmax+" Y"+ymax+"\n").getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 Z"+ zDown +"\n").getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 X"+xmax+" Y"+ymin+"\n").getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 X"+xmin+" Y"+ymin+"\n").getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 X"+xmin+" Y"+ymax+"\n").getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 X"+xmax+" Y"+ymax+"\n").getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 Z"+ zUp +"\n").getBytes(StandardCharsets.UTF_8));
 
 			// move to starting position
-			output.write(new String("G91\n").getBytes());
-			output.write(new String("G0 X"+(-turtleStep /2)+" Y"+(-turtleStep /2)+"\n").getBytes());
+			output.write("G91\n".getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 X"+(-turtleStep /2)+" Y"+(-turtleStep /2)+"\n").getBytes(StandardCharsets.UTF_8));
 						
 			// do the curve
-			output.write(new String(G90_NL).getBytes());
-			output.write(new String("G0 Z"+ zDown +"\n").getBytes());
+			output.write(G90_NL.getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 Z"+ zDown +"\n").getBytes(StandardCharsets.UTF_8));
 			
-			output.write(new String("G91\n").getBytes());
+			output.write("G91\n".getBytes(StandardCharsets.UTF_8));
 			hilbert(output,order);
 			
-			output.write(new String(G90_NL).getBytes());
-			output.write(new String("G0 Z"+ zUp +"\n").getBytes());
+			output.write(G90_NL.getBytes(StandardCharsets.UTF_8));
+			output.write(("G0 Z"+ zUp +"\n").getBytes(StandardCharsets.UTF_8));
 
 			// finish up
-			output.write(new String("G28\n").getBytes());
+			output.write("G28\n".getBytes(StandardCharsets.UTF_8));
 			
         	output.flush();
 	        output.close();
@@ -190,6 +191,6 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 
     
     public void turtle_goForward(OutputStream output) throws IOException {
-    	output.write(new String("G0 X"+(turtleDx * turtleStep)+" Y"+(turtleDy * turtleStep)+"\n").getBytes());
+		output.write(("G0 X"+(turtleDx * turtleStep)+" Y"+(turtleDy * turtleStep)+"\n").getBytes(StandardCharsets.UTF_8));
     }
 }
