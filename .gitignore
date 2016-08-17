@@ -2,5 +2,14 @@
 TEMP.NGC
 
 *.class
+<<<<<<< HEAD
 
 *.class
+=======
+
+*.class
+*.class
+/target/
+
+*.class
+>>>>>>> origin/master

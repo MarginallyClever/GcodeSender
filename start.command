@@ -9,4 +9,4 @@ SOURCE="$(readlink "$SOURCE")"
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-java -jar "$DIR/GcodeSender.jar"
+java -jar "$DIR/gcodesender.jar"

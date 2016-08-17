@@ -1,7 +1,8 @@
-package GcodeSender;
+package com.marginallyclever.gcodesender;
 
 import java.awt.BorderLayout;
 import java.awt.Container;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -11,7 +12,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -19,6 +22,7 @@ import java.util.prefs.Preferences;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -32,9 +36,9 @@ import javax.swing.KeyStroke;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import GcodeSender.Generators.GcodeGenerator;
-import GcodeSender.Generators.HilbertCurveGenerator;
-import GcodeSender.Generators.YourMessageHereGenerator;
+import com.marginallyclever.gcodesender.Generators.GcodeGenerator;
+import com.marginallyclever.gcodesender.Generators.HilbertCurveGenerator;
+import com.marginallyclever.gcodesender.Generators.YourMessageHereGenerator;
 
 
 /**
@@ -48,47 +52,56 @@ public class GcodeSender
 extends JPanel
 implements ActionListener, KeyListener, SerialConnectionReadyListener
 {
-	static final long serialVersionUID=1;
-	static final String version="1";
-	
-	static protected GcodeSender singleton=null;
+	private static final long serialVersionUID=1;
+	private static final String RECENT_FILES = "recent-files-";
+
+	private static String VERSION="1.1.0";
+	protected static GcodeSender singleton;
 	
 	// command line
-	JPanel textInputArea;
-	JTextField commandLineText;
-	JButton commandLineSend;
+	private JPanel textInputArea;
+	private JTextField commandLineText;
+	private JButton commandLineSend;
 	
 	// menus
 	static private JFrame mainframe;
 	private JMenuBar menuBar;
-	private JMenuItem buttonOpenFile, buttonExit;
+	private JMenuItem buttonOpenFile;
+	private JMenuItem buttonExit;
     private JMenuItem [] buttonRecent = new JMenuItem[10];
-	private JMenuItem buttonRescan, buttonDisconnect;
-	private JMenuItem buttonStart, buttonPause, buttonHalt;
-	private JMenuItem buttonAbout,buttonCheckForUpdate;
+	private JMenuItem buttonRescan;
+	private JMenuItem buttonDisconnect;
+	private JMenuItem buttonStart;
+	private JMenuItem buttonPause;
+	private JMenuItem buttonHalt;
+	private JMenuItem buttonAbout;
+	private JMenuItem buttonCheckForUpdate;
 	private StatusBar statusBar;
 	
 	// serial connections
-	private SerialConnection arduino;
-	private boolean aReady=false, wasConfirmed=false;
+	private final SerialConnection arduino;
+	private boolean aReady;
+	private boolean wasConfirmed;
 
 	// settings
-	private Preferences prefs;
+	private final Preferences prefs;
 	private String[] recentFiles = {"","","","","","","","","",""};
 	
 	public double [] len = new double[6];
 	
 	// files
-	private boolean running=false;
+	private boolean running;
 	private boolean paused=true;
-    private long linesTotal=0;
-	private long linesProcessed=0;
-	private boolean fileOpened=false;
+	private boolean oneAtATime;
+	private boolean loopForever;
+    private long linesTotal;
+	private long linesProcessed;
+	private boolean fileOpened;
 	private ArrayList<String> gcode;
 	
 	// Generators
-	GcodeGenerator [] generators;
-	JMenuItem generatorButtons[];
+	private GcodeGenerator [] generators;
+	private JMenuItem generatorButtons[];
 
 	
 	public JFrame GetMainFrame() {
@@ -104,7 +117,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	private GcodeSender() {
 		prefs = Preferences.userRoot().node("GcodeSender");
 		
-		LoadConfig();
+		loadConfig();
 		
 		LoadGenerators();
 		
@@ -148,19 +161,6 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	}
 	
 	
-	public void SerialConnectionReady(SerialConnection arg0) {
-		if(arg0==arduino) aReady=true;
-		
-		if(aReady) {
-			if(!wasConfirmed) {
-				wasConfirmed=true;
-				UpdateMenuBar();
-			}
-			aReady=false;
-			SendFileCommand();
-		}
-	}
-	
 	@Override
 	public void keyTyped(KeyEvent e) {}
 
@@ -169,11 +169,45 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 
     /** Handle the key-released event from the text field. */
     public void keyReleased(KeyEvent e) {
-		if(e.getKeyCode() == KeyEvent.VK_ENTER) {
-			if(IsConfirmed() && !running) {
-				arduino.SendCommand(commandLineText.getText());
-				commandLineText.setText("");
-			}
+		if (e.getKeyCode() == KeyEvent.VK_ENTER && arduino.isPortOpened() && !running) {
+			String msg = commandLineText.getText();
+			sendLineToRobot(msg);
+			commandLineText.setText("");
+		}
+	}
+    
+    /**
+     * Check the user's preferences for how to run this session. 
+     * @return false if the user hits cancel (please don't start sending)
+     */
+    private boolean checkStartOptions() {
+		oneAtATime=true;
+		
+		JCheckBox checkLoopForever = new JCheckBox("Loop forever");
+		JCheckBox checkOneAtATime = new JCheckBox("One line at a time");
+		
+		JPanel panel = new JPanel(new GridLayout(0, 1));
+		panel.add(checkLoopForever);
+		panel.add(checkOneAtATime);
+
+		int result = JOptionPane.showConfirmDialog(null, panel, getName(), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		if (result == JOptionPane.OK_OPTION) {
+			oneAtATime = checkOneAtATime.isSelected();
+			loopForever = checkLoopForever.isSelected();
+
+			return true;
+		}
+		
+    	return false;
+    }
+    
+    private void startSending() {
+		if (fileOpened && checkStartOptions()) {
+			paused = false;
+			running = true;
+			linesProcessed = 0;
+			updateMenuBar();
+			sendFileCommand();
 		}
 	}
 	
@@ -181,18 +215,17 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	public void actionPerformed(ActionEvent e) {
 		Object subject = e.getSource();
 
-		if(subject==commandLineSend) {
-			if(IsConfirmed() && !running) {
-				arduino.SendCommand(commandLineText.getText());
-				commandLineText.setText("");
-			}
+		if (subject == commandLineSend && arduino.isPortOpened() && !running) {
+			String msg = commandLineText.getText();
+			sendLineToRobot(msg);
+			commandLineText.setText("");
 		}
 		if(subject==buttonExit) {
 			System.exit(0);  // @TODO: be more graceful?
 			return;
 		}
 		if(subject==buttonOpenFile) {
-			OpenFileDialog();
+			openFileDialog();
 			return;
 		}
 		if(GeneratorMenuAction(e)) {
@@ -200,7 +233,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		}
 		if(subject==buttonRescan) {
 			arduino.DetectSerialPorts();
-			UpdateMenuBar();
+			updateMenuBar();
 			return;
 		}
 		if(subject==buttonDisconnect) {
@@ -208,26 +241,17 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			return;
 		}
 		if(subject==buttonStart) {
-			//if(fileOpened) OpenFile(recentFiles[0]);
-			if(fileOpened) {
-				paused=false;
-				running=true;
-				linesProcessed=0;
-				UpdateMenuBar();
-				//previewPane.setRunning(running);
-				//previewPane.setLinesProcessed(linesProcessed);
-				//statusBar.Start();
-				SendFileCommand();
-			}
+			oneAtATime=false;
+			startSending();
 			return;
 		}
 		if( subject == buttonPause ) {
 			if(running) {
-				if(paused==true) {
+				if(paused) {
 					buttonPause.setText("Pause");
 					paused=false;
 					// @TODO: if the robot is not ready to unpause, this might fail and the program would appear to hang.
-					SendFileCommand();
+					sendFileCommand();
 				} else {
 					buttonPause.setText("Unpause");
 					paused=true;
@@ -236,12 +260,12 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			return;
 		}
 		if( subject == buttonHalt ) {
-			Halt();
+			halt();
 			return;
 		}
 		if( subject == buttonAbout ) {
 			JOptionPane.showMessageDialog(null,"<html><body>"
-					+"<h1>GcodeSender v"+version+"</h1>"
+					+"<h1>GcodeSender v"+VERSION+"</h1>"
 					+"<h3><a href='http://www.marginallyclever.com/'>http://www.marginallyclever.com/</a></h3>"
 					+"<p>Created by Dan Royer (dan@marginallyclever.com).</p><br>"
 					+"<p>To get the latest version please visit<br><a href='https://github.com/MarginallyClever/GcodeSender'>https://github.com/MarginallyClever/GcodeSender</a></p><br>"
@@ -250,40 +274,60 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 			return;
 		}
 		if( subject == buttonCheckForUpdate ) {
-			CheckForUpdate();
+			checkForUpdate();
 			return;
 		}
 		
 		int i;
 		for(i=0;i<10;++i) {
 			if(subject == buttonRecent[i]) {
-				OpenFile(recentFiles[i]);
+				openFile(recentFiles[i]);
 				return;
 			}
 		}
 	}
 	
 	
-	public void CheckForUpdate() {
+	/**
+	 * Parse https://github.com/MarginallyClever/Makelangelo/releases/latest redirect notice
+	 * to find the latest release tag.
+	 */
+	public void checkForUpdate() {
 		try {
-		    // Get Github info?
-			URL github = new URL("https://www.marginallyclever.com/other/software-update-check.php?id=2");
-	        BufferedReader in = new BufferedReader(new InputStreamReader(github.openStream()));
+			URL github = new URL("https://github.com/MarginallyClever/GCodeSender/releases/latest");
+			HttpURLConnection conn = (HttpURLConnection) github.openConnection();
+			conn.setInstanceFollowRedirects(false);  //you still need to handle redirect manully.
+			HttpURLConnection.setFollowRedirects(false);
+			BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
 
-	        String inputLine;
-	        if((inputLine = in.readLine()) != null) {
-	        	if( inputLine.compareTo(version) !=0 ) {
-	        		JOptionPane.showMessageDialog(null,"A new version of this software is available.  The latest version is "+inputLine+"\n"
-	        											+"Please visit http://www.marginallyclever.com/ to get the new hotness.");
-	        	} else {
-	        		JOptionPane.showMessageDialog(null,"This version is up to date.");
-	        	}
-	        } else {
-	        	throw new Exception();
-	        }
-	        in.close();
+			String inputLine;
+			if ((inputLine = in.readLine()) != null) {
+				// parse the URL in the text-only redirect
+				String matchStart = "<a href=\"";
+				String matchEnd = "\">";
+				int start = inputLine.indexOf(matchStart);
+				int end = inputLine.indexOf(matchEnd);
+				if (start != -1 && end != -1) {
+					inputLine = inputLine.substring(start + matchStart.length(), end);
+					// parse the last part of the redirect URL, which contains the release tag (which is the VERSION)
+					inputLine = inputLine.substring(inputLine.lastIndexOf("/") + 1);
+
+					System.out.println("last release: " + inputLine);
+					System.out.println("your VERSION: " + VERSION);
+
+					if (inputLine.compareTo(VERSION) > 0) {
+						JOptionPane.showMessageDialog(null, "A new version of this software is available.  The latest version is "+inputLine+"\n"
+								+"Please visit http://www.marginallyclever.com/ to get the new hotness.");
+					} else {
+						JOptionPane.showMessageDialog(null, "This version is up to date.");
+					}
+				}
+			} else {
+				throw new Exception();
+			}
+			in.close();
 		} catch (Exception e) {
-    		JOptionPane.showMessageDialog(null,"Sorry, I failed.  Please visit http://www.marginallyclever.com/ to check yourself.");
+			JOptionPane.showMessageDialog(null, "Sorry, I failed.  Please visit http://www.marginallyclever.com/ to check yourself.");
 		}
 	}
 	
@@ -292,36 +336,52 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	 * stop sending commands to the robot.
 	 * @todo add an e-stop command?
 	 */
-	public void Halt() {
+	public void halt() {
 		running=false;
 		paused=false;
 	    linesProcessed=0;
-	    //previewPane.setLinesProcessed(0);
-		//previewPane.setRunning(running);
-		UpdateMenuBar();
+		updateMenuBar();
 	}
 
 	
+	protected boolean inSendNow;
 	/**
 	 * Take the next line from the file and send it to the robot, if permitted. 
 	 */
-	public void SendFileCommand() {
-		if(running==false || paused==true || fileOpened==false || IsConfirmed()==false || linesProcessed>=linesTotal) return;
+	public void sendFileCommand() {
+		if(inSendNow || !running || paused || !fileOpened || !arduino.isPortOpened() || linesProcessed>=linesTotal) return;
+		
+		inSendNow=true;
 		
 		String line;
-		do {			
+		do {
 			// are there any more commands?
-			line=gcode.get((int)linesProcessed++).trim();
-			//previewPane.setLinesProcessed(linesProcessed);
-			//statusBar.SetProgress(linesProcessed, linesTotal);
+			line=gcode.get((int)linesProcessed).trim();
+			linesProcessed++;
+			
+			arduino.Log(">> "+line+"\n");
+
 			// loop until we find a line that gets sent to the robot, at which point we'll
-			// pause for the robot to respond.  Also stop at end of file.
-		} while(!SendLineToRobot(line) && linesProcessed<linesTotal);
+			// pause for the robot to respond.  Also stop at end of file.			
+			if( oneAtATime && line.length()>0 ) {
+				int n = JOptionPane.showConfirmDialog(mainframe,line,"line "+linesProcessed,JOptionPane.OK_CANCEL_OPTION);
+				if(n == JOptionPane.CANCEL_OPTION) {
+					halt();
+					break;
+				}
+			}
+		} while(!sendLineToRobot(line) && linesProcessed<linesTotal);
 		
 		if(linesProcessed==linesTotal) {
 			// end of file
-			Halt();
+			if( loopForever ) {
+				linesProcessed=0;
+			} else {
+				halt();
+			}
 		}
+		
+		inSendNow=false;
 	}
 	
 	/**
@@ -329,7 +389,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	 * @param line
 	 * @return true if the command is sent to the robot.
 	 */
-	public boolean SendLineToRobot(String line) {
+	public boolean sendLineToRobot(String line) {
 		if(line.length()==0 || line.equals(";")) return false;
 		
 		// tool change request?
@@ -350,7 +410,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		
 			// end of program?
 			if(tokens[0]=="M02" || tokens[0]=="M2") {
-				Halt();
+				halt();
 				return false;
 			}
 		} 
@@ -358,8 +418,6 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		// contains a comment?  if so remove it
 		int index=line.indexOf('(');
 		if(index!=-1) {
-			//String comment=line.substring(index+1,line.lastIndexOf(')'));
-			//Log("* "+comment+NL);
 			line=line.substring(0,index).trim();
 			if(line.length()==0) {
 				// entire line was a comment.
@@ -373,16 +431,16 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		return true;
 	}
 
-	protected void LoadConfig() {
-		GetRecentFiles();
+	protected void loadConfig() {
+		getRecentFiles();
 	}
 
-	protected void SaveConfig() {
-		GetRecentFiles();
+	protected void saveConfig() {
+		getRecentFiles();
 	}
 	
-	private void CloseFile() {
-		if(fileOpened==true) {
+	private void closeFile() {
+		if(fileOpened) {
 			fileOpened=false;
 		}
 	}
@@ -391,11 +449,11 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	 * Opens a file.  If the file can be opened, get a drawing time estimate, update recent files list, and repaint the preview tab.
 	 * @param filename what file to open
 	 */
-	public void OpenFile(String filename) {
-		CloseFile();
+	public void openFile(String filename) {
+		closeFile();
 
 	    try {
-	    	Scanner scanner = new Scanner(new FileInputStream(filename));
+			Scanner scanner = new Scanner(new FileInputStream(filename), "UTF-8");
 	    	linesTotal=0;
 	    	gcode = new ArrayList<String>();
 		    try {
@@ -409,16 +467,14 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		    }
 	    }
 	    catch(IOException e) {
-	    	RemoveRecentFile(filename);
+	    	removeRecentFile(filename);
 	    	return;
 	    }
-	    
-	    //previewPane.setGCode(gcode);
-	    fileOpened=true;
-	   	UpdateRecentFiles(filename);
 
-	   	//EstimateDrawTime();
-	    Halt();
+	    fileOpened=true;
+	   	updateRecentFiles(filename);
+
+	    halt();
 	}
 	
 	
@@ -426,16 +482,18 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	 * changes the order of the recent files list in the File submenu, saves the updated prefs, and refreshes the menus.
 	 * @param filename the file to push to the top of the list.
 	 */
-	public void UpdateRecentFiles(String filename) {
+	public void updateRecentFiles(String filename) {
 		int cnt = recentFiles.length;
 		String [] newFiles = new String[cnt];
 		
 		newFiles[0]=filename;
 		
-		int i,j=1;
+		int i;
+		int j=1;
 		for(i=0;i<cnt;++i) {
 			if(!filename.equals(recentFiles[i]) && recentFiles[i] != "") {
-				newFiles[j++] = recentFiles[i];
+				newFiles[j] = recentFiles[i];
+				j++;
 				if(j == cnt ) break;
 			}
 		}
@@ -444,17 +502,17 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 
 		// update prefs
 		for(i=0;i<cnt;++i) {
-			if( recentFiles[i]==null ) recentFiles[i] = new String("");
-			if( recentFiles[i].isEmpty()==false ) {
-				prefs.put("recent-files-"+i, recentFiles[i]);
+			if( recentFiles[i]==null ) recentFiles[i] = "";
+			if( !recentFiles[i].isEmpty() ) {
+				prefs.put(RECENT_FILES+i, recentFiles[i]);
 			}
 		}
 		
-		UpdateMenuBar();
+		updateMenuBar();
 	}
 	
 	// A file failed to load.  Remove it from recent files, refresh the menu bar.
-	public void RemoveRecentFile(String filename) {
+	public void removeRecentFile(String filename) {
 		int i;
 		for(i=0;i<recentFiles.length-1;++i) {
 			if(recentFiles[i]==filename) {
@@ -469,23 +527,23 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		// update prefs
 		for(i=0;i<recentFiles.length;++i) {
 			if(!recentFiles[i].isEmpty()) {
-				prefs.put("recent-files-"+i, recentFiles[i]);
+				prefs.put(RECENT_FILES+i, recentFiles[i]);
 			}
 		}
 		
-		UpdateMenuBar();
+		updateMenuBar();
 	}
 	
 	// Load recent files from prefs
-	public void GetRecentFiles() {
+	public void getRecentFiles() {
 		int i;
 		for(i=0;i<recentFiles.length;++i) {
-			recentFiles[i] = prefs.get("recent-files-"+i, recentFiles[i]);
+			recentFiles[i] = prefs.get(RECENT_FILES+i, recentFiles[i]);
 		}
 	}
 	
 	// creates a file open dialog. If you don't cancel it opens that file.
-	public void OpenFileDialog() {
+	public void openFileDialog() {
 	    // Note: source for ExampleFileFilter can be found in FileChooserDemo,
 	    // under the demo/jfc directory in the Java 2 SDK, Standard Edition.
 		String filename = (recentFiles[0].length()>0) ? filename=recentFiles[0] : "";
@@ -497,19 +555,15 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		fc.addChoosableFileFilter(filterImage);
 		fc.addChoosableFileFilter(filterGCODE);
 	    if(fc.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-	    	OpenFile(fc.getSelectedFile().getAbsolutePath());
+	    	openFile(fc.getSelectedFile().getAbsolutePath());
 	    }
 	}
 	
-	private boolean IsConfirmed() {
-		return arduino.portConfirmed;
-	}
-	
-	private void UpdateMenuBar() {
+	private void updateMenuBar() {
 		JMenu menu;
         JMenu subMenu;
         
-        menuBar.removeAll();
+        if(menuBar != null) menuBar.removeAll();
 
         menu = new JMenu("GCodeSender");
         
@@ -573,7 +627,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         menu.addSeparator();
 
         // list recent files
-        GetRecentFiles();
+        getRecentFiles();
         if(recentFiles.length>0) {
         	// list files here
         	int i;
@@ -596,8 +650,8 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         // action menu
         menu = new JMenu("Action");
         menu.setMnemonic(KeyEvent.VK_A);
-        menu.setEnabled(IsConfirmed() && fileOpened);
-
+        menu.setEnabled(arduino.isPortOpened() && fileOpened);
+        
         buttonStart = new JMenuItem("Start",KeyEvent.VK_S);
         buttonStart.getAccessibleContext().setAccessibleDescription("Start sending g-code");
         buttonStart.addActionListener(this);
@@ -622,11 +676,11 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
         menuBar.updateUI();
 	}
 	
-	public JMenuBar CreateMenuBar() {
+	public JMenuBar createMenuBar() {
         // If the menu bar exists, empty it.  If it doesn't exist, create it.
         menuBar = new JMenuBar();
 
-        UpdateMenuBar();
+        updateMenuBar();
         
         return menuBar;
 	}
@@ -647,7 +701,7 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 		return textInputArea;
 	}
 	
-	private Container CreateContentPane() {
+	private Container createContentPane() {
         JPanel contentPane = new JPanel(new BorderLayout());
         contentPane.setOpaque(true);
 
@@ -666,15 +720,15 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	}
     
     // Create the GUI and show it.  For thread safety, this method should be invoked from the event-dispatching thread.
-    private static void CreateAndShowGUI() {
+    private static void createAndShowGUI() {
         //Create and set up the window.
     	mainframe = new JFrame("GcodeSender");
         mainframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
  
         //Create and set up the content pane.
         GcodeSender demo = GcodeSender.getSingleton();
-        mainframe.setJMenuBar(demo.CreateMenuBar());
-        mainframe.setContentPane(demo.CreateContentPane());
+        mainframe.setJMenuBar(demo.createMenuBar());
+        mainframe.setContentPane(demo.createContentPane());
  
         //Display the window.
         mainframe.setSize(1100,500);
@@ -686,8 +740,38 @@ implements ActionListener, KeyListener, SerialConnectionReadyListener
 	    //creating and showing this application's GUI.
 	    javax.swing.SwingUtilities.invokeLater(new Runnable() {
 	        public void run() {
-	            CreateAndShowGUI();
+	            createAndShowGUI();
 	        }
 	    });
     }
+
+	@Override
+	public void lineError(SerialConnection arg0, int lineNumber) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void connectionReady(SerialConnection arg0) {
+		sendNow(arg0);
+	}
+
+	@Override
+	public void dataAvailable(SerialConnection arg0, String data) {
+		arduino.Log("** "+data+"\n");
+		sendNow(arg0);
+	}
+	
+	void sendNow(SerialConnection arg0) {
+		if(arg0==arduino) aReady=true;
+		
+		if(aReady) {
+			if(!wasConfirmed) {
+				wasConfirmed=true;
+				updateMenuBar();
+			}
+			aReady=false;
+			sendFileCommand();
+		}
+	}
 }

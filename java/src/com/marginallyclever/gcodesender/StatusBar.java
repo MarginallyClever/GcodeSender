@@ -1,11 +1,11 @@
-package GcodeSender;
+package com.marginallyclever.gcodesender;
 
 import java.awt.Dimension;
 
 import javax.swing.JLabel;
 
 public class StatusBar extends JLabel {
-	static final long serialVersionUID=1;
+	private static final long serialVersionUID=1;
 
     /** Creates a new instance of StatusBar */
     public StatusBar() {
