@@ -13,7 +13,7 @@ On most systems you can double click it to start.
 
 ##Drivers
 
-Need Arduino code that reads GCode and moves motors?  Try https://github.com/MarginallyClever/gcodecncdemo
+Need Arduino code that reads GCode and moves motors?  Try [https://github.com/MarginallyClever/gcodecncdemo GCodeCNCDemo].
 
 ##More
 
