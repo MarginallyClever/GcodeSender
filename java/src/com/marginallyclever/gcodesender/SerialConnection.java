@@ -28,7 +28,7 @@ implements SerialPortEventListener, ActionListener {
 	private static final String BADCHECKSUM = "BADCHECKSUM ";
 	private static final String BADLINENUM = "BADLINENUM ";
 	private static final String NEWLINE = "\n";
-	private static final String COMMENT_START = ";";
+	//private static final String COMMENT_START = ";";
 
 	
 	private String[] portsDetected;

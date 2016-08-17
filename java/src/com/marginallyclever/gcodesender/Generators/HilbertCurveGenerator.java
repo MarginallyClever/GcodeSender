@@ -20,8 +20,6 @@ import com.marginallyclever.gcodesender.GcodeSender;
 // source http://introcs.cs.princeton.edu/java/32class/Hilbert.java.html
 public class HilbertCurveGenerator implements GcodeGenerator {
 	private static final String G90_NL = "G90\n";
-	private float turtleX;
-	private float turtleY;
 	private float turtleDx;
 	private float turtleDy;
 	private float turtleStep =10.0f;
@@ -101,8 +99,6 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 			output.write(G90_NL.getBytes(StandardCharsets.UTF_8));
 			output.write(("G54 X-30 Z-"+ toolOffsetZ +"\n").getBytes(StandardCharsets.UTF_8));
 			
-			turtleX =0;
-			turtleY =0;
 			turtleDx =0;
 			turtleDy =-1;
 			turtleStep = (float)((xmax-xmin) / (Math.pow(2, order)));

@@ -1,7 +1,9 @@
 #GcodeSender
 
 This program will feed instructions to an serial device one line at a time.
-It waits for the ">" character between each send.
+It waits for the ">" character from the device between each send. ">" is how the device tells the GcodeSender that the device is ready to receive more instructions.
+
+If you find this free program useful, please purchase parts for your robots from [https://www.marginallyclever.com] and tell your friends.  Your support let us be more helpful.
 
 ## I just want to run it!
 
@@ -9,19 +11,17 @@ It waits for the ">" character between each send.
 
 On most systems you can double click it to start.
 
-On some you may need to do something like
-
-    java -classpath RXTXcomm.jar -Djava.library.path=[path to RXTXcomm.jar] -jar DrawbotGUI.jar
-
 ##Drivers
 
 Need Arduino code that reads GCode and moves motors?  Try https://github.com/MarginallyClever/gcodecncdemo
 
 ##More
 
-For the latest version please visit http://www.github.com/MarginallyClever/GcodeSender
+For the latest version please visit [http://www.github.com/MarginallyClever/GcodeSender the repository].
 
-If you find this free program useful, please send me some beer money.
+For more information, please visit [http://www.github.com/MarginallyClever/GcodeSender/wiki the wiki].
+
+For technical help, please visit [https://www.marginallyclever.com/forums the forums].
 
 ##Author
 
