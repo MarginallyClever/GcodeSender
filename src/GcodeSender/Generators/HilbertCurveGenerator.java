@@ -37,7 +37,7 @@ public class HilbertCurveGenerator implements GcodeGenerator {
 	
 	
 	public void Generate() {
-		final JDialog driver = new JDialog(GcodeSender.getSingleton().GetMainFrame(),"Your Message Here",true);
+		final JDialog driver = new JDialog(GcodeSender.getSingleton().GetMainFrame(),"Hilbert Curve",true);
 		driver.setLayout(new GridLayout(0,1));
 
 		final JTextField field_size = new JTextField(Integer.toString((int)xmax));

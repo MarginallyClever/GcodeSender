@@ -325,6 +325,7 @@ public class YourMessageHereGenerator implements GcodeGenerator {
 		        		output.write(";\n");
 		        	}
 		        }
+		        in.close();
 			} else {
 				// file not found
 				System.out.print(fn);
